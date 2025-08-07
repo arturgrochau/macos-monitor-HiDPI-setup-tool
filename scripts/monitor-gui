@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""
+Monitor Layout Manager - GUI Wrapper  
+Shell-neutral GUI entry point for any shell.
+"""
+
+import os
+import sys
+import subprocess
+
+def main():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.dirname(script_dir)
+    
+    # Check if we're in the right project directory
+    main_path = os.path.join(project_dir, 'main.py')
+    if not os.path.exists(main_path):
+        print("❌ Error: Monitor Layout Manager not found")
+        print(f"Expected main.py at: {main_path}")
+        sys.exit(1)
+    
+    # Find Python executable (prefer venv)
+    venv_python = os.path.join(project_dir, '.venv', 'bin', 'python')
+    if os.path.exists(venv_python):
+        python_cmd = venv_python
+    else:
+        python_cmd = sys.executable
+    
+    # Build command for GUI
+    cmd = [python_cmd, 'main.py', '--gui'] + sys.argv[1:]
+    
+    # Execute GUI with proper working directory
+    try:
+        result = subprocess.run(cmd, cwd=project_dir)
+        sys.exit(result.returncode)
+    except Exception as e:
+        print(f"❌ Error running GUI: {e}")
+        print("💡 Try: pip install pillow && brew install python-tk")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

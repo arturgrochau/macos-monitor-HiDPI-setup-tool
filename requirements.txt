@@ -1,0 +1,19 @@
+# Monitor Layout Manager - Python Dependencies
+# Core CLI framework
+click>=8.0.0
+
+# Rich terminal formatting and colors
+rich>=12.0.0
+
+# Cross-platform colored terminal text
+colorama>=0.4.4
+
+# Syntax highlighting (rich dependency)
+pygments>=2.10.0
+
+# Markdown parsing (rich dependency)
+markdown-it-py>=2.0.0
+
+# GUI Dependencies (system-provided)
+# tkinter - Included with Python on macOS (install: brew install python-tk)
+# PIL/Pillow - Optional for advanced image handling: pip install pillow

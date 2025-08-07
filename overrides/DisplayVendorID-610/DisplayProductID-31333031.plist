@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>DisplayProductID</key>
+  <integer>825307441</integer>
+  <key>DisplayVendorID</key>
+  <integer>1552</integer>
+  <key>DisplayProductName</key>
+  <string>Arzopa HiDPI</string>
+  <key>scale-resolutions</key>
+  <array>
+    <data>AQAB</data>   <!-- 960x600 -->
+    <data>AgIE</data>   <!-- 1280x800 -->
+    <data>AQID</data>   <!-- 1440x900 -->
+    <data>AgMG</data>   <!-- 1600x1000 -->
+    <data>AgQG</data>   <!-- 1680x1050 -->
+    <data>AgUG</data>   <!-- 1920x1200 -->
+    <data>AgcG</data>   <!-- 2560x1600 -->
+  </array>
+</dict>
+</plist>
