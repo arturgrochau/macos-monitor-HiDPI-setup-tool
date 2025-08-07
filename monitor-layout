@@ -1,43 +1,66 @@
-#!/bin/bash
-# Universal shell launcher for Monitor Layout Manager
-# Works with bash, zsh, fish, and other shells
+#!/usr/bin/env python3
+"""
+Monitor Layout Manager - Unified Entry Script
+Single command for both GUI and CLI modes.
+"""
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$SCRIPT_DIR"
+import sys
+import os
 
-# Function to run CLI
-run_cli() {
-    if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
-        "$PROJECT_DIR/.venv/bin/python" -m cli "$@"
-    else
-        python3 -m cli "$@"
-    fi
-}
+# Change to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
-# Function to run GUI
-run_gui() {
-    if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
-        "$PROJECT_DIR/.venv/bin/python" "$PROJECT_DIR/main.py"
-    else
-        python3 "$PROJECT_DIR/main.py"
-    fi
-}
+# Add to Python path
+sys.path.insert(0, script_dir)
 
-# Parse command
-case "${1:-gui}" in
-    "gui"|"")
-        echo "🚀 Launching GUI..."
-        cd "$PROJECT_DIR"
-        run_gui
-        ;;
-    "cli")
-        shift
-        cd "$PROJECT_DIR"
-        run_cli "$@"
-        ;;
-    *)
-        # Default to CLI for any other command
-        cd "$PROJECT_DIR"
-        run_cli "$@"
-        ;;
-esac
+def main():
+    """Unified entry point."""
+    # Check for help
+    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h', 'help']:
+        print("🖥️  Monitor Layout Manager")
+        print("")
+        print("Usage:")
+        print("  ./monitor-layout                 # Launch GUI (default)")
+        print("  ./monitor-layout --cli detect    # CLI mode with commands")
+        print("")
+        print("Examples:")
+        print("  ./monitor-layout                 # Open visual interface")
+        print("  ./monitor-layout --cli save -n \"Work\"  # Save layout via CLI")
+        return
+    
+    # Check for CLI mode
+    if len(sys.argv) > 1 and '--cli' in sys.argv:
+        # Remove --cli and pass remaining args
+        import subprocess
+        args = [arg for arg in sys.argv[1:] if arg != '--cli']
+        venv_python = os.path.join(script_dir, '.venv', 'bin', 'python')
+        
+        if os.path.exists(venv_python):
+            python_cmd = venv_python
+        else:
+            python_cmd = sys.executable
+            
+        cmd = [python_cmd, '-m', 'cli'] + args
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
+    else:
+        # Default to GUI
+        venv_python = os.path.join(script_dir, '.venv', 'bin', 'python')
+        
+        if os.path.exists(venv_python):
+            import subprocess
+            result = subprocess.run([venv_python, 'main.py'] + sys.argv[1:])
+            sys.exit(result.returncode)
+        else:
+            # Fallback to current Python
+            try:
+                from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
+                app = AdvancedMonitorLayoutManager()
+                app.run()
+            except ImportError:
+                print("❌ GUI dependencies missing. Install with: brew install python-tk")
+                sys.exit(1)
+
+if __name__ == "__main__":
+    main()

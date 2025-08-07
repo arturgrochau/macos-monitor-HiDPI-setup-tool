@@ -1,6 +1,11 @@
 #!/bin/bash
 # Monitor Layout Manager - Universal Installation Script
-# Compatible with all shells: bash, zsh, fish
+# Compatible with all sif [ -d "overrides" ]; then
+    echo "⚠️  Reboot required for HiDPI changes to take effect"
+    echo ""
+fi
+
+echo "🚀 Launching Monitor Layout Manager GUI..."ash, zsh, fish
 
 set -e  # Exit on any error
 
@@ -75,35 +80,78 @@ else
 fi
 
 echo ""
-echo "🔗 Setting up shell-neutral entry points..."
-chmod +x scripts/monitor-cli scripts/monitor-gui 2>/dev/null || true
+echo "🔗 Setting up global CLI access..."
+# Optional global CLI linking
+if [ ! -d "~/bin" ]; then
+    mkdir -p ~/bin
+fi
+if [ -f ~/bin/monitor-layout ]; then
+    rm ~/bin/monitor-layout 2>/dev/null || true
+fi
+ln -sf "$(pwd)/scripts/monitor-cli" ~/bin/monitor-layout
+
+# Add ~/bin to PATH if not already there
+if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+        "fish")
+            echo 'set -gx PATH $HOME/bin $PATH' >> ~/.config/fish/config.fish 2>/dev/null || true
+            echo "✅ Added ~/bin to PATH in Fish config"
+            ;;
+        "zsh")
+            echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc 2>/dev/null || true
+            echo "✅ Added ~/bin to PATH in .zshrc"
+            ;;
+        *)
+            echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bash_profile 2>/dev/null || true
+            echo "✅ Added ~/bin to PATH in .bash_profile"
+            ;;
+    esac
+fi
+
+echo ""
+echo "🔗 Setting up unified entry point..."
+chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui 2>/dev/null || true
 
 echo ""
 echo "✅ Installation Complete!"
 echo ""
-echo "🚀 Quick Start:"
-echo "  python3 main.py              # Launch GUI"
-echo "  python3 main.py --cli        # Launch CLI"  
-echo "  python3 -m cli detect        # Direct CLI"
-echo "  ./scripts/monitor-cli detect # Shell wrapper"
-echo "  ./scripts/monitor-gui        # GUI launcher"
+echo ""
+echo "✅ Monitor Setup Tool installed successfully!"
+echo ""
+echo "� Quick Start:"
+echo "   ./monitor-layout          # Launch GUI"
+echo "   ./monitor-layout --cli    # Use CLI mode"
+echo "   monitor-layout            # Global CLI (after restart/new shell)"
+echo ""
+echo "💡 The GUI will help you create and manage monitor layouts visually."
 echo ""
 
-# Detect current shell and show specific integration
-if [ -n "$FISH_VERSION" ]; then
-    echo "🐟 Detected Fish Shell:"
-    echo "  fish scripts/install-fish.fish    # Full fish integration"
-elif [ -n "$ZSH_VERSION" ]; then
-    echo "🚀 Detected Zsh Shell - Ready to use!"
-elif [ -n "$BASH_VERSION" ]; then
-    echo "🐚 Detected Bash Shell - Ready to use!"
+# Optional auto-launch prompt
+read -p "🚀 Would you like to launch the GUI now? (y/N): " launch_gui
+if [[ "$launch_gui" =~ ^[Yy]$ ]]; then
+    echo "🎯 Launching Monitor Setup GUI..."
+    ./monitor-layout
 else
-    echo "🔧 Shell detected - Ready to use!"
+    echo "👋 Run './monitor-layout' when you're ready to configure your monitors!"
 fi
 
+# Optional Fish integration hint (quiet)
+echo "🐟 Optional: Run 'scripts/install-fish.fish' for Fish shell aliases"
 echo ""
+
 if [ -d "overrides" ]; then
     echo "⚠️  Reboot required for HiDPI changes to take effect"
+    echo "   After reboot, the GUI will launch automatically"
+    echo ""
+    echo "🚀 For now, launching Monitor Layout Manager GUI..."
 else
-    echo "✨ Ready to use immediately!"
+    echo "� Launching Monitor Layout Manager GUI..."
 fi
+
+echo ""
+echo "   ✨ Starting visual monitor configuration..."
+sleep 1
+
+# Launch GUI automatically using unified entry point
+./monitor-layout

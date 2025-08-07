@@ -45,28 +45,30 @@ cd monitor-setup-tool
 
 ## ⚡ Quick Start
 
-### 🎯 Launch Options
+### 🎯 One-Command Setup & Launch
 
-<div align="center">
-
-| Mode          | Command                        | Description                           |
-| ------------- | ------------------------------ | ------------------------------------- |
-| **🎨 GUI**     | `./scripts/monitor-gui`        | Launch visual drag-and-drop interface |
-| **⚡ CLI**     | `./scripts/monitor-cli detect` | Command-line display detection        |
-| **🔧 Unified** | `python3 main.py`              | GUI default, `--cli` for CLI mode     |
-
-</div>
-
-### 🛠️ Installation
-
-#### One-Command Setup (Recommended)
 ```bash
-git clone <repository-url>
+git clone https://github.com/arturgrochau/monitor-setup-tool.git
 cd monitor-setup-tool
-./install.sh                    # Installs everything automatically
+./install.sh                    # Installs everything + opens GUI automatically
 ```
 
-#### Manual Setup  
+### 🖥️ Daily Usage
+
+```bash
+# Launch the visual interface (most common)
+./monitor-layout                 # GUI opens automatically
+
+# Save your current setup & switch between layouts
+# Use the GUI to save layouts with custom names like "Work", "Home"
+# Use the dropdown in the GUI to switch instantly between saved layouts
+```
+
+### 🛠️ Alternative Installation
+
+<details>
+<summary>Manual Setup (if you prefer step-by-step)</summary>
+
 ```bash
 # 1. Dependencies
 brew install jakehilborn/jakehilborn/displayplacer python-tk
@@ -76,32 +78,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 3. Make scripts executable
-chmod +x scripts/monitor-cli scripts/monitor-gui
+# 3. Launch
+./monitor-layout
 ```
-
-### 🎮 Usage Examples
-
-#### 🎨 GUI Mode (Visual Interface)
-```bash
-./scripts/monitor-gui           # Launch drag-and-drop GUI
-python3 main.py                 # Alternative GUI launch
-```
-
-#### ⚡ CLI Mode (Automation & Scripting)
-```bash
-./scripts/monitor-cli --help    # Show all commands
-./scripts/monitor-cli detect    # Detect connected displays
-./scripts/monitor-cli save -n "Work Setup"  # Save current layout
-./scripts/monitor-cli load "Work Setup"     # Apply saved layout
-./scripts/monitor-cli list-layouts          # List saved layouts
-```
-
-#### 🐟 Fish Shell Integration (Optional)
-```bash
-./scripts/install-fish.fish     # Advanced fish shell integration
-# Adds aliases: mlgui, mldetect, mlsave, etc.
-```
+</details>
 
 ---
 
@@ -118,70 +98,84 @@ python3 main.py                 # Alternative GUI launch
 
 </div>
 
-> **⚠️ Important**: This tool is **macOS-only** and uses system-specific display APIs
+> **⚠️## 🎨 Visual Interface
 
----
+The GUI provides an intuitive visual experience:
 
-## 💻 CLI Commands
+- **🖱️ Drag & Drop**: Visually position monitors on canvas - see exactly how they'll be arranged
+- **📐 Real-time Preview**: Changes appear instantly before applying
+- **💾 Layout Management**: Save configurations with custom names like "Work", "Home", "Gaming"
+- **⚡ One-Click Switching**: Dropdown menu to switch between saved layouts instantly
+- **🔧 Advanced Settings**: Resolution, scaling, rotation options for each display
+- **🎯 Multiple Profiles**: Perfect for different work scenarios or locations
 
-The CLI provides powerful automation capabilities:
+### Getting Started with the GUI
 
-<details>
-<summary>🔍 <strong>Display Detection & Info</strong></summary>
-
-```bash
-./scripts/monitor-cli detect                    # Detect all displays
-./scripts/monitor-cli doctor                    # System diagnostics  
-./scripts/monitor-cli --debug detect           # Debug mode
-```
-</details>
-
-<details>
-<summary>💾 <strong>Layout Management</strong></summary>
-
-```bash
-./scripts/monitor-cli save -n "Layout Name" -d "Description"
-./scripts/monitor-cli load "Layout Name"
-./scripts/monitor-cli list-layouts
-./scripts/monitor-cli delete "Layout Name"
-```
-</details>
-
-<details>
-<summary>📦 <strong>Backup & Export</strong></summary>
-
-```bash
-./scripts/monitor-cli backup                   # Create backup
-./scripts/monitor-cli export layouts.json     # Export layouts
-./scripts/monitor-cli import-layouts layouts.json
-```
-</details>
-
----
-
-## 🎨 GUI Features
-
-The GUI provides an intuitive visual interface:
-
-- **🖱️ Drag & Drop**: Visually position monitors on canvas
-- **📐 Real-time Preview**: See changes before applying
-- **💾 Layout Management**: Save, load, and switch between configurations
-- **🔧 Advanced Settings**: Resolution, scaling, rotation options
-- **🎯 Profile System**: Multiple named layouts for different scenarios
-
-### Screenshots
+1. **🚀 Launch**: Run `./monitor-layout` - the GUI opens automatically
+2. **🖱️ Arrange**: Drag monitor rectangles to desired positions  
+3. **⚙️ Configure**: Set resolution and scaling for each display
+4. **💾 Save**: Name your layout (e.g., "Perfect Work Setup")
+5. **✅ Apply**: Click "Apply Layout" to activate
+6. **🔄 Switch**: Use dropdown to instantly switch between saved setups
 
 <div align="center">
 
-*🖼️ GUI screenshots would go here in a real repository*
+*🖼️ GUI screenshots coming soon - clean drag-and-drop interface*
 
-**Drag-and-Drop Interface** • **Layout Management** • **Advanced Settings**
+**Professional Interface** • **Instant Layout Switching** • **Visual Positioning**
 
 </div>
 
 ---
 
-## 🐟 Fish Shell Integration
+## 🧪 Advanced Usage
+
+<details>
+<summary>⚡ <strong>Command Line Interface (CLI)</strong> - For automation & scripting</summary>
+
+The CLI provides powerful automation capabilities for power users:
+
+#### 🔍 Display Detection & Info
+```bash
+./monitor-layout --cli detect                    # Detect all displays
+./monitor-layout --cli doctor                    # System diagnostics  
+./monitor-layout --cli --debug detect           # Debug mode
+```
+
+#### 💾 Layout Management
+```bash
+./monitor-layout --cli save -n "Layout Name" -d "Description"
+./monitor-layout --cli load "Layout Name"
+./monitor-layout --cli list-layouts
+./monitor-layout --cli delete "Layout Name"
+```
+
+#### 📦 Backup & Export
+```bash
+./monitor-layout --cli backup                   # Create backup
+./monitor-layout --cli export layouts.json     # Export layouts
+./monitor-layout --cli import-layouts layouts.json
+```
+
+#### CLI Examples
+```bash
+# Morning routine: Switch to work setup
+./monitor-layout --cli load work
+
+# Save current dual monitor configuration  
+./monitor-layout --cli save -n "dual-4k" -d "Two 4K monitors side by side"
+
+# List all layouts with details
+./monitor-layout --cli list-layouts
+
+# Export for backup or sharing
+./monitor-layout --cli export ~/Desktop/my-monitor-layouts.json
+```
+
+</details>
+
+<details>
+<summary>🐟 <strong>Fish Shell Integration</strong> - Enhanced fish completions</summary>
 
 For Fish shell users, get enhanced completions and aliases:
 
@@ -196,9 +190,10 @@ mlload "Layout Name"           # Load layout
 mllist                         # List layouts
 ```
 
----
+</details>
 
-## 🧪 Developer Guide
+<details>
+<summary>🔧 <strong>Developer Guide</strong> - Project structure and development</summary>
 
 ### Project Structure
 ```
@@ -227,9 +222,11 @@ pip install -r requirements.txt
 ### Testing
 ```bash
 ./scripts/monitor-cli detect            # Test CLI
-./scripts/monitor-gui                   # Test GUI
+./monitor-layout                        # Test GUI
 python3 -m cli --debug detect          # Debug mode
 ```
+
+</details>
 
 ---
 
