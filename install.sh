@@ -1,11 +1,5 @@
 #!/bin/bash
 # Monitor Layout Manager - Universal Installation Script
-# Compatible with all sif [ -d "overrides" ]; then
-    echo "⚠️  Reboot required for HiDPI changes to take effect"
-    echo ""
-fi
-
-echo "🚀 Launching Monitor Layout Manager GUI..."ash, zsh, fish
 
 set -e  # Exit on any error
 

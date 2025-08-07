@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import json
 from datetime import datetime
 
-from core.advanced_display_manager import AdvancedDisplayManager, Display
+from core.advanced_display_manager import AdvancedDisplayManager, Display, LayoutProfile
 
 class DraggableDisplay:
     """Represents a draggable display rectangle on the canvas"""
@@ -296,10 +296,32 @@ class AdvancedMonitorLayoutManager:
     
     def setup_ui(self):
         """Setup the user interface"""
-        # Configure style
+        # Configure style for macOS
         style = ttk.Style()
         if "aqua" in style.theme_names():
             style.theme_use("aqua")
+        
+        # Configure fonts for macOS
+        available_fonts = font.families()
+        if "SF Pro Text" in available_fonts:
+            default_font = ("SF Pro Text", 11)
+            small_font = ("SF Pro Text", 9)
+        elif "Helvetica Neue" in available_fonts:
+            default_font = ("Helvetica Neue", 11)
+            small_font = ("Helvetica Neue", 9)
+        else:
+            default_font = ("Helvetica", 11)
+            small_font = ("Helvetica", 9)
+        
+        # Configure ttk styles with macOS fonts
+        style.configure("TLabel", font=default_font)
+        style.configure("TButton", font=default_font)
+        style.configure("TLabelframe.Label", font=default_font)
+        style.configure("Heading.TLabel", font=(default_font[0], default_font[1] + 2, "bold"))
+        
+        # Store fonts for use in other methods
+        self.default_font = default_font
+        self.small_font = small_font
         
         # Main container
         main_frame = ttk.Frame(self.root)
@@ -454,6 +476,11 @@ class AdvancedMonitorLayoutManager:
         self.status_var.set("Ready")
         
         ttk.Label(status_frame, textvariable=self.status_var).pack(side="left")
+        
+        # Creator attribution in the center
+        creator_label = ttk.Label(status_frame, text="Created by Artur Grochau", 
+                                font=self.small_font)
+        creator_label.pack(side="left", expand=True)
         
         # Display count
         self.display_count_var = tk.StringVar()
@@ -792,7 +819,7 @@ class AdvancedMonitorLayoutManager:
             
             # Create a temporary layout
             temp_layout_name = f"temp_{int(datetime.now().timestamp())}"
-            layout = self.display_manager.LayoutProfile(
+            layout = LayoutProfile(
                 name=temp_layout_name,
                 description="Temporary layout for applying",
                 displays=config,
@@ -855,7 +882,7 @@ class AdvancedMonitorLayoutManager:
                 
                 imported_count = 0
                 for name, layout_data in data.items():
-                    layout = self.display_manager.LayoutProfile(**layout_data)
+                    layout = LayoutProfile(**layout_data)
                     self.display_manager.layouts[name] = layout
                     imported_count += 1
                 

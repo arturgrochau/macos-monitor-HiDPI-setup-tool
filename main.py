@@ -53,14 +53,12 @@ def show_help():
     """Show help information."""
     print("🖥️  Monitor Layout Manager")
     print("")
-    print("Usage:")
-    print("  ./monitor-layout             # Launch GUI (default)")
-    print("  ./monitor-layout --cli       # Launch CLI mode")
-    print("  monitor-layout               # Global CLI (after install)")
+    print("1️⃣  Launch GUI:  python3 main.py")
+    print("2️⃣  Launch CLI:  python3 main.py --cli")
     print("")
     print("Examples:")
-    print("  ./monitor-layout --cli detect    # Detect displays")
-    print("  ./monitor-layout --cli layouts   # List saved layouts")
+    print("  python3 main.py --cli detect     # Detect displays")
+    print("  python3 main.py --cli layouts    # List saved layouts")
 
 def main():
     """Main entry point - dispatches to GUI or CLI based on arguments."""
@@ -74,6 +72,22 @@ def main():
         launch_cli()
     elif len(sys.argv) > 1 and '--gui' in sys.argv:
         launch_gui()
+    elif len(sys.argv) == 1:
+        # Interactive menu when no args
+        print("🖥️  Monitor Layout Manager")
+        print("")
+        print("1️⃣  Launch GUI")
+        print("2️⃣  Launch CLI") 
+        print("")
+        try:
+            choice = input("Choose option (1/2, or Enter for GUI): ").strip()
+            if choice == '2':
+                launch_cli()
+            else:
+                launch_gui()
+        except (KeyboardInterrupt, EOFError):
+            print("\n👋 Goodbye!")
+            return
     else:
         # Default to GUI for best user experience
         launch_gui()

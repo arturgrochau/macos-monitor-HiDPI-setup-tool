@@ -13,63 +13,61 @@ Build a minimalist, production-ready Python app that:
 
 ## 👤 Use Case
 
-- End-users can select a layout from a dropdown (e.g., "Home", "Cafe") and apply it.
-- Layouts define **resolution**, **position**, and **HiDPI state** for each display.
+- End-users select a layout from a dropdown (e.g., "Home", "Cafe") and apply it.
+- Layouts define **resolution**, **position**, and **HiDPI state** per display.
 - GUI must reflect macOS-native style (minimalist, clean).
-- Tool must work seamlessly across all macOS shells (zsh, fish, etc.)
-- Should detect displays dynamically — no hardcoded IDs.
-- Optionally save and reuse user-defined layouts.
+- Should work seamlessly across all macOS shells (zsh, fish, bash).
+- Dynamically detects displays — no hardcoded IDs.
 
 ## 🧰 Stack
 
 - Python 3.11+
-- `tkinter` for GUI
-- `Click` for optional CLI
+- `tkinter` + `ttk` for GUI
+- `Click` for CLI
 - `displayplacer` (installed via Homebrew)
-- `plistlib` (Python stdlib) for HiDPI enabling
+- `plistlib` for HiDPI support
 
-## 🧩 Components
+## 🧩 Structure
+
 .
-├── main.py               # CLI/GUI unified entrypoint
-├── display_manager.py    # Detects displays, applies layouts
-├── gui.py                # Tkinter GUI for layout selection & config
-├── layout_store.json     # Stores user-defined layouts
-├── install.sh            # Installs dependencies + HiDPI patches
-├── README.md             # User-facing documentation
-└── .github/
-└── copilot-instructions.md
+├── main.py                  # Unified CLI/GUI launcher
+├── core/                    # Display logic + layout application
+├── gui/                     # Tkinter GUI
+├── cli/                     # CLI definitions (click)
+├── utils/                   # Helper utilities
+├── scripts/                 # Shell wrappers + fish support
+├── overrides/              # HiDPI plist patches
+├── install.sh              # Setup script
+├── README.md               # Docs
+└── .github/copilot-instructions.md
 
 ## 🔍 Behavior
 
-- On launch, GUI scans displays (`displayplacer list`) and presents dropdown for layout
-- Users can define new layouts via GUI (choose display, assign resolution + position)
-- Layouts saved in JSON (`layout_store.json`)
-- Applying a layout calls `displayplacer` using dynamically generated command
-- GUI must show success/error feedback and current active layout
+- On launch, GUI scans displays (`displayplacer list`)
+- Users can define new layouts, select resolutions/positions/HiDPI
+- Layouts saved in `.monitor-layout/`
+- Applying a layout calls `displayplacer` dynamically
+- GUI shows current layout, errors, and logs
+- Auto-creates `.venv` on first run
+- Shows branding: “Created by Artur Grochau”
 
-## ✨ Code Guidelines
+## 🚀 Out-of-the-box UX
 
-- Favor pure Python
-- Avoid hardcoded UUIDs — detect and store during layout creation
-- Provide fallback resolution for displays with limited HiDPI support
-- Structure should be modular and extensible
-- Prefer `subprocess.run()` over `os.system`
-- Use clear docstrings and logging
+```bash
+git clone https://github.com/arturgrochau/monitor-setup-tool.git
+cd monitor-setup-tool
+./install.sh
 
-## 🚀 Out-of-the-box Expectations
+# GUI
+python3 main.py
 
-- Works after `./install.sh` and `python main.py`
-- Creates `.venv` if needed
-- Installs `displayplacer`
-- Enables required `.plist` overrides for HiDPI
-- GUI ready and working on first launch
-- Compatible with fish, zsh, bash shells
+# CLI
+python3 main.py --cli
+Works in: fish, zsh, bash. No config required.
 
-## 🤖 Claude + Copilot
-
-Please assist with:
-- Building native-looking GUI dropdowns for layout and display selection
-- Managing JSON layout store
-- Reliable parsing of `displayplacer list` output
-- Tkinter-based screen detection + preview
-- Applying `displayplacer` commands programmatically
+🤖 Claude / Copilot Tasks
+	•	Parse displayplacer list into structured data
+	•	Build GUI with ttk for dropdowns / layout preview
+	•	Enable smart display positioning
+	•	Detect active shell silently
+	•	Minimal install + run UX, no user setup required
