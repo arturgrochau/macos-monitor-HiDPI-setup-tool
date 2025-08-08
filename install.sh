@@ -115,6 +115,10 @@ echo ""
 echo "🔗 Setting up unified entry point..."
 chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui "Monitor Layout Manager" 2>/dev/null || true
 
+echo "  🍎 Removing macOS quarantine from executable..."
+xattr -d com.apple.quarantine "Monitor Layout Manager" 2>/dev/null || true
+echo "  ✅ Monitor Layout Manager ready for double-click launch"
+
 echo ""
 echo "🎉 Installation Complete! 🎉"
 echo ""
