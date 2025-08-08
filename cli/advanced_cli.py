@@ -2,7 +2,13 @@
 Advanced CLI Interface for Monitor Layout Manager
 """
 
-import click
+try:
+    import click
+except ImportError:
+    print("❌ Missing dependency: click")
+    print("💡 Run: ./install.sh or activate virtualenv + pip install -r requirements.txt")
+    exit(1)
+
 import json
 import os
 import sys

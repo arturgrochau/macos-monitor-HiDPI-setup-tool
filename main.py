@@ -10,14 +10,30 @@ import os
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+def check_setup():
+    """Validate that setup is complete before launching."""
+    # Check if .venv exists
+    if not os.path.exists('.venv'):
+        print("❗ Setup not complete. Run `./install.sh` first.")
+        sys.exit(1)
+    
+    # Warn if virtual environment is not activated (optional check)
+    if not os.getenv("VIRTUAL_ENV") and os.path.exists('.venv'):
+        print("⚠️  Virtual environment not activated.")
+        print("💡 For best results, run: source .venv/bin/activate")
+        print("   Or use: .venv/bin/python main.py")
+        print("")
+
 def launch_gui():
     """Launch the advanced GUI interface."""
+    check_setup()
     try:
         from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
         app = AdvancedMonitorLayoutManager()
         app.run()
     except ImportError as e:
         print(f"❌ GUI Error: {e}")
+        print("💡 Try running: ./install.sh")
         print("💡 Install GUI dependencies: brew install python-tk")
         print("🔧 For CLI usage, run: python main.py --cli")
         sys.exit(1)
@@ -27,6 +43,7 @@ def launch_gui():
 
 def launch_cli():
     """Launch the CLI interface."""
+    check_setup()
     try:
         # Use subprocess to call the CLI module directly
         import subprocess

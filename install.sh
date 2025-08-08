@@ -3,7 +3,19 @@
 
 set -e  # Exit on any error
 
-echo "�️  Monitor Layout Manager - Installation"
+echo "�️  echo ""
+echo "✅ Installation Complete!"
+echo ""
+echo "🚀 Quick Start:"
+echo "  1️⃣ Launch GUI:    ./monitor-layout"
+echo "  2️⃣ Launch CLI:    ./monitor-layout --cli detect"  
+echo "  3️⃣ Global CLI:    monitor-layout (after restart)"
+echo ""
+echo "💡 The GUI lets you drag monitors around to position them."
+echo ""
+
+# Optional auto-launch prompt
+read -p "🎯 Launch GUI now? (y/N): " launch_guianager - Installation"
 echo "========================================"
 
 # Check if we're on macOS
@@ -50,8 +62,14 @@ fi
 
 # Activate and install dependencies
 echo "  📥 Installing Python packages..."
-.venv/bin/pip install --upgrade pip
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install --upgrade pip > /dev/null 2>&1
+if .venv/bin/pip install -r requirements.txt > /dev/null 2>&1; then
+    echo "  ✅ Dependencies installed successfully"
+else
+    echo "  ❌ Failed to install dependencies"
+    echo "  💡 Check your internet connection and try again"
+    exit 1
+fi
 
 echo ""
 echo "🖥️  HiDPI Display Setup..."
@@ -108,44 +126,25 @@ echo "🔗 Setting up unified entry point..."
 chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui 2>/dev/null || true
 
 echo ""
-echo "✅ Installation Complete!"
+echo "🎉 Installation Complete! 🎉"
 echo ""
+echo "✅ Virtual environment created and dependencies installed"
+echo "✅ Scripts made executable and CLI access configured" 
+echo "✅ Ready to launch Monitor Layout Manager"
 echo ""
-echo "✅ Monitor Setup Tool installed successfully!"
+echo "🚀 Quick Start:"
+echo "  1️⃣ Launch GUI:    ./monitor-layout"
+echo "  2️⃣ Launch CLI:    ./monitor-layout --cli detect"  
+echo "  3️⃣ Global CLI:    monitor-layout (after restart)"
 echo ""
-echo "� Quick Start:"
-echo "   ./monitor-layout          # Launch GUI"
-echo "   ./monitor-layout --cli    # Use CLI mode"
-echo "   monitor-layout            # Global CLI (after restart/new shell)"
-echo ""
-echo "💡 The GUI will help you create and manage monitor layouts visually."
+echo "💡 The GUI lets you drag monitors around to position them."
 echo ""
 
 # Optional auto-launch prompt
-read -p "🚀 Would you like to launch the GUI now? (y/N): " launch_gui
+read -p "🎯 Launch GUI now? (y/N): " launch_gui
 if [[ "$launch_gui" =~ ^[Yy]$ ]]; then
-    echo "🎯 Launching Monitor Setup GUI..."
+    echo "� Launching Monitor Layout Manager..."
     ./monitor-layout
 else
-    echo "👋 Run './monitor-layout' when you're ready to configure your monitors!"
+    echo "👋 Run './monitor-layout' when ready!"
 fi
-
-# Optional Fish integration hint (quiet)
-echo "🐟 Optional: Run 'scripts/install-fish.fish' for Fish shell aliases"
-echo ""
-
-if [ -d "overrides" ]; then
-    echo "⚠️  Reboot required for HiDPI changes to take effect"
-    echo "   After reboot, the GUI will launch automatically"
-    echo ""
-    echo "🚀 For now, launching Monitor Layout Manager GUI..."
-else
-    echo "� Launching Monitor Layout Manager GUI..."
-fi
-
-echo ""
-echo "   ✨ Starting visual monitor configuration..."
-sleep 1
-
-# Launch GUI automatically using unified entry point
-./monitor-layout
