@@ -50,7 +50,18 @@ def main():
         
         if os.path.exists(venv_python):
             import subprocess
-            result = subprocess.run([venv_python, 'main.py'] + sys.argv[1:])
+            # Launch GUI directly by calling main.py with GUI flag or by direct import
+            result = subprocess.run([venv_python, '-c', """
+import sys, os
+sys.path.insert(0, os.getcwd())
+try:
+    from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
+    app = AdvancedMonitorLayoutManager()
+    app.run()
+except Exception as e:
+    print(f'❌ GUI Error: {e}')
+    print('💡 Try: ./install.sh or brew install python-tk')
+"""])
             sys.exit(result.returncode)
         else:
             # Fallback to current Python

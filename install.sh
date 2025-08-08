@@ -113,18 +113,18 @@ fi
 
 echo ""
 echo "🔗 Setting up unified entry point..."
-chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui "Monitor Layout Manager" 2>/dev/null || true
+chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui 2>/dev/null || true
 
 echo "  🍎 Removing macOS quarantine from executable..."
-xattr -d com.apple.quarantine "Monitor Layout Manager" 2>/dev/null || true
-echo "  ✅ Monitor Layout Manager ready for double-click launch"
+xattr -d com.apple.quarantine monitor-layout 2>/dev/null || true
+echo "  ✅ monitor-layout ready for double-click launch"
 
 echo ""
 echo "🎉 Installation Complete! 🎉"
 echo ""
 echo "✅ Virtual environment created and dependencies installed"
 echo "✅ Scripts made executable and CLI access configured" 
-echo "✅ Ready to launch Monitor Layout Manager"
+echo "✅ Ready to launch monitor-layout"
 echo ""
 echo "🚀 Quick Start:"
 echo "  1️⃣ Launch GUI:    ./monitor-layout"
@@ -137,7 +137,7 @@ echo ""
 # Optional auto-launch prompt
 read -p "🎯 Launch GUI now? (y/N): " launch_gui
 if [[ "$launch_gui" =~ ^[Yy]$ ]]; then
-    echo "🚀 Launching Monitor Layout Manager..."
+    echo "🚀 Launching monitor-layout..."
     ./monitor-layout
 else
     echo "👋 Run './monitor-layout' when ready!"

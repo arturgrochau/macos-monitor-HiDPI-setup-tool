@@ -8,18 +8,18 @@
 **The simplest way to manage your Mac's monitor layouts. Drag, drop, save, apply.**
 
 <p align="center">
-  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.0-minimal.zip">
+  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip">
     <img src="https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge&logo=download" alt="Download Latest Release">
   </a>
 </p>
 
 ## 🚀 Get Started in 30 Seconds
 
-1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.0-minimal.zip)**
-2. **Unzip** and double-click **`Monitor Layout Manager`**
+1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip)**
+2. **Unzip** and double-click **`monitor-layout`**
 3. **Done!** 🎉
 
-> **Just want to try it?** Double-click the `Monitor Layout Manager` file after download. It handles everything automatically.
+> **Just want to try it?** Double-click the `monitor-layout` file after download. It handles everything automatically.
 
 ## ✨ What It Does
 
@@ -44,6 +44,11 @@
 **🔧 Not working?** Run `./install.sh` in terminal first  
 **📚 Want more?** Check the [Complete Guide](docs/README_detailed.md)  
 **🐠 Fish user?** See [Fish Integration](docs/FISH_GUIDE.md)  
+
+**🍎 macOS blocked the app?**
+1. Go to **System Settings > Privacy & Security**
+2. Scroll to "Security" and click **"Allow Anyway"** for `monitor-layout`
+3. Double-click `monitor-layout` again to launch  
 
 ---
 

@@ -3,6 +3,81 @@
 **Started: August 7, 2025**  
 **Focus: GUI-first with seamless CLI for power users**
 
+## Session 12: Single Entry Point Optimization (August 8, 2025)
+
+**Chain of Thought Process - Streamlined User Experience:**
+
+### 🧠 Strategic Analysis
+- **Problem**: Dual entry points (`monitor-layout` + `Monitor Layout Manager`) causing confusion
+- **Issue**: `monitor-layout` was showing interactive menu instead of launching GUI directly
+- **Goal**: Single, consistent entry point with direct GUI launch
+
+### 🛠️ Implementation Steps
+
+**1. Entry Point Consolidation**
+- ✅ **Removed**: `Monitor Layout Manager` file (confusing duplicate)
+- ✅ **Kept**: `monitor-layout` as single entry point
+- ✅ **Updated**: All references in install.sh and README
+
+**2. Direct GUI Launch Fix**
+- ✅ **Problem**: `monitor-layout` was calling `main.py` which showed interactive menu
+- ✅ **Solution**: Modified `monitor-layout` to launch GUI directly via Python import
+- ✅ **Benefit**: Double-click now goes straight to GUI, no menu
+
+**3. macOS Security Enhancement**
+- ✅ **Added**: Gatekeeper security instructions to README
+- ✅ **Guide**: Step-by-step instructions for "Allow Anyway" in System Settings
+- ✅ **User-Friendly**: Clear guidance for common macOS security dialog
+
+**4. Clean Distribution Creation**
+- ✅ **Created**: `monitor-layout-manager-v1.0.1-clean.zip`
+- ✅ **Excluded**: All `__pycache__`, redundant files, dev artifacts
+- ✅ **Optimized**: Single executable + essential code only
+
+**5. GitHub Release Update**
+- ✅ **Uploaded**: New clean ZIP to v1.0.0 release
+- ✅ **Updated**: README download links to clean version
+- ✅ **Maintained**: Backward compatibility with previous releases
+
+### 🎯 Optimized User Experience Flow
+```
+Download → Unzip → Double-click monitor-layout → GUI opens directly
+```
+
+**No More:**
+- ❌ Confusing multiple executables
+- ❌ Interactive menu before GUI
+- ❌ Need to choose between entry points
+
+**Perfect Flow:**
+- ✅ Single `monitor-layout` file
+- ✅ Direct GUI launch on double-click
+- ✅ CLI accessible with `--cli` flag
+
+### 🧪 Testing Results
+- ✅ **GUI Launch**: `./monitor-layout` opens GUI directly (no menu)
+- ✅ **CLI Mode**: `./monitor-layout --cli detect` works perfectly
+- ✅ **Help**: `./monitor-layout --help` shows usage
+- ✅ **Clean Distribution**: No __pycache__ or dev files
+
+### 📁 Files Modified
+- **REMOVED**: `Monitor Layout Manager` (eliminated confusion)
+- **MODIFIED**: `monitor-layout` - Direct GUI launch via Python import
+- **UPDATED**: `install.sh` - Single executable references
+- **ENHANCED**: `README.md` - macOS security guidance, clean download links
+- **CREATED**: `monitor-layout-manager-v1.0.1-clean.zip` - Optimized distribution
+
+**Status**: ✅ Single entry point perfected, direct GUI launch, production-ready!
+
+**Latest Download**: https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip
+
+[2025-08-08 15:30] Consolidated to single monitor-layout entry point
+[2025-08-08 15:32] Fixed direct GUI launch (no interactive menu)  
+[2025-08-08 15:35] Created clean distribution ZIP v1.0.1
+[2025-08-08 15:37] Updated README with macOS Gatekeeper guidance
+
+---
+
 ## Session 11: Final Repository Organization & Minimal Release (August 8, 2025)
 
 **Chain of Thought Process - Repository Polish & User-Friendly Distribution:**
