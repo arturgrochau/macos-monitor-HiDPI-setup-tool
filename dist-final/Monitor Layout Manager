@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+"""
+Monitor Layout Manager - Unified Entry Script
+Single command for both GUI and CLI modes.
+"""
+
+import sys
+import os
+
+# Change to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
+# Add to Python path
+sys.path.insert(0, script_dir)
+
+def main():
+    """Unified entry point."""
+    # Check for help
+    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h', 'help']:
+        print("🖥️  Monitor Layout Manager")
+        print("")
+        print("Usage:")
+        print("  ./monitor-layout                 # Launch GUI (default)")
+        print("  ./monitor-layout --cli detect    # CLI mode with commands")
+        print("")
+        print("Examples:")
+        print("  ./monitor-layout                 # Open visual interface")
+        print("  ./monitor-layout --cli save -n \"Work\"  # Save layout via CLI")
+        return
+    
+    # Check for CLI mode
+    if len(sys.argv) > 1 and '--cli' in sys.argv:
+        # Remove --cli and pass remaining args
+        import subprocess
+        args = [arg for arg in sys.argv[1:] if arg != '--cli']
+        venv_python = os.path.join(script_dir, '.venv', 'bin', 'python')
+        
+        if os.path.exists(venv_python):
+            python_cmd = venv_python
+        else:
+            python_cmd = sys.executable
+            
+        cmd = [python_cmd, '-m', 'cli'] + args
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
+    else:
+        # Default to GUI
+        venv_python = os.path.join(script_dir, '.venv', 'bin', 'python')
+        
+        if os.path.exists(venv_python):
+            import subprocess
+            # Launch GUI directly by calling main.py with GUI flag or by direct import
+            result = subprocess.run([venv_python, '-c', """
+import sys, os
+sys.path.insert(0, os.getcwd())
+try:
+    from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
+    app = AdvancedMonitorLayoutManager()
+    app.run()
+except Exception as e:
+    print(f'❌ GUI Error: {e}')
+    print('💡 Try: ./install.sh or brew install python-tk')
+"""])
+            sys.exit(result.returncode)
+        else:
+            # Fallback to current Python
+            try:
+                from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
+                app = AdvancedMonitorLayoutManager()
+                app.run()
+            except ImportError:
+                print("❌ GUI dependencies missing. Install with: brew install python-tk")
+                sys.exit(1)
+
+if __name__ == "__main__":
+    main()

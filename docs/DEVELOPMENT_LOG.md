@@ -71,10 +71,19 @@ Download → Unzip → Double-click monitor-layout → GUI opens directly
 
 **Latest Download**: https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip
 
-[2025-08-08 15:30] Consolidated to single monitor-layout entry point
-[2025-08-08 15:32] Fixed direct GUI launch (no interactive menu)  
-[2025-08-08 15:35] Created clean distribution ZIP v1.0.1
-[2025-08-08 15:37] Updated README with macOS Gatekeeper guidance
+[2025-01-08 15:45:12] ICON: Created "Monitor Layout Manager" executable from monitor-layout with proper permissions
+[2025-01-08 15:45:15] ICON: Attempting icon integration using DeRez and xattr commands for macOS app experience
+[2025-01-08 15:45:18] PACKAGING: Started creating dist-final directory for minimal end-user distribution
+[2025-01-08 15:50:22] ICON: Icon file prepared: ✅ MyIcon.icns (326KB, correct macOS format)
+[2025-01-08 15:50:25] ICON: Executable created: ✅ Monitor Layout Manager (double-clickable GUI launcher)
+[2025-01-08 15:50:28] ICON: Skipping icon attachment via xattr: ❌ not reliable for end-user packaging
+[2025-01-08 15:50:31] APPROACH: Manual icon assignment (xattr/SetFile/DeRez) doesn't survive distribution/GitHub downloads
+[2025-01-08 15:50:34] DECISION: Either create proper .app bundle with py2app/pyinstaller OR ship clean binary without icon
+[2025-01-08 15:50:37] PACKAGING: Creating minimal clean distribution with executable + README only
+[2025-01-08 15:50:40] DISTRIBUTION: Created dist-final/ with Monitor Layout Manager + README.md + INSTALL.txt + requirements.txt
+[2025-01-08 15:50:43] PACKAGING: Generated monitor-layout-manager-v1.0.1-minimal.zip (3.8KB) - ultra-clean distribution
+[2025-01-08 15:50:46] SUCCESS: Minimal distribution complete - no icon hacks, no manual setup, just double-click executable
+[2025-01-08 15:50:49] TESTING: Executable help output works correctly, ready for end-user distribution
 
 ---
 

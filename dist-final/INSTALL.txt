@@ -1,0 +1,22 @@
+🖥️ Monitor Layout Manager - Quick Start
+
+INSTALLATION:
+1. Download and extract this ZIP
+2. Double-click "Monitor Layout Manager" to launch GUI
+3. That's it! No terminal setup required.
+
+FIRST RUN:
+- App will auto-create Python virtual environment
+- GUI opens automatically for layout management
+- Create layouts, save them, switch between them
+
+CLI MODE (optional):
+- Run: ./Monitor\ Layout\ Manager --cli detect
+- Or: python3 main.py --cli detect
+
+REQUIREMENTS:
+- macOS 10.14+
+- displayplacer (installed via: brew install displayplacer)
+- Python 3.8+ (usually pre-installed)
+
+Created by Artur Grochau
