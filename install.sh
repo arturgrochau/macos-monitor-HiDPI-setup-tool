@@ -60,7 +60,16 @@ echo "  📥 Installing Python packages..."
 .venv/bin/pip install --upgrade pip > /dev/null 2>&1
 if .venv/bin/pip install -r requirements.txt > /dev/null 2>&1; then
     echo "  ✅ Dependencies installed successfully"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] INSTALL: Python dependencies installed from requirements.txt" >> docs/DEVELOPMENT_LOG.md
+    # 📝 Updating the Development Log (optional - skip if file doesn't exist)
+if [[ -f "docs/DEVELOPMENT_LOG.md" ]]; then
+    echo "" >> docs/DEVELOPMENT_LOG.md
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] AUTO-INSTALL: Successfully created virtual environment and installed packages via install.sh" >> docs/DEVELOPMENT_LOG.md
+elif [[ -f "devtools/docs/DEVELOPMENT_LOG.md" ]]; then
+    echo "" >> devtools/docs/DEVELOPMENT_LOG.md
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] AUTO-INSTALL: Successfully created virtual environment and installed packages via install.sh" >> devtools/docs/DEVELOPMENT_LOG.md
+else
+    echo "ℹ️  Development log not found - skipping log entry"
+fi
 else
     echo "  ❌ Failed to install dependencies"
     echo "  💡 Check your internet connection and try again"
