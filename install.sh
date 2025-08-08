@@ -32,6 +32,7 @@ if ! command -v displayplacer &> /dev/null; then
     echo "  📥 Installing displayplacer..."
     if command -v brew &> /dev/null; then
         brew install jakehilborn/jakehilborn/displayplacer
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] INSTALL: Installed displayplacer via Homebrew" >> docs/DEVELOPMENT_LOG.md
     else
         echo "  ❌ Homebrew not found. Please install Homebrew first:"
         echo "     /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
@@ -65,6 +66,7 @@ echo "  📥 Installing Python packages..."
 .venv/bin/pip install --upgrade pip > /dev/null 2>&1
 if .venv/bin/pip install -r requirements.txt > /dev/null 2>&1; then
     echo "  ✅ Dependencies installed successfully"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] INSTALL: Python dependencies installed from requirements.txt" >> docs/DEVELOPMENT_LOG.md
 else
     echo "  ❌ Failed to install dependencies"
     echo "  💡 Check your internet connection and try again"

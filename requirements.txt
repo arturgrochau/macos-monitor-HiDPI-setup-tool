@@ -14,6 +14,7 @@ pygments>=2.10.0
 # Markdown parsing (rich dependency)
 markdown-it-py>=2.0.0
 
-# GUI Dependencies (system-provided)
-# tkinter - Included with Python on macOS (install: brew install python-tk)
-# PIL/Pillow - Optional for advanced image handling: pip install pillow
+# GUI Dependencies
+# Note: tkinter is included with Python on macOS but may need: brew install python-tk
+# Added tk for completeness (some systems may require it)
+tk>=0.1.0

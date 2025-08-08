@@ -71,3 +71,4 @@ Works in: fish, zsh, bash. No config required.
 	•	Enable smart display positioning
 	•	Detect active shell silently
 	•	Minimal install + run UX, no user setup required
+	•	**ALWAYS log dev actions in docs/DEVELOPMENT_LOG.md using format: [YYYY-MM-DD HH:MM:SS] ACTION: <summary>**
