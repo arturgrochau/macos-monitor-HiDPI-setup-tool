@@ -8,18 +8,18 @@
 **The simplest way to manage your Mac's monitor layouts. Drag, drop, save, apply.**
 
 <p align="center">
-  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip">
+  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.1/MonitorLayoutManager-macOS-v1.0.1-FINAL.zip">
     <img src="https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge&logo=download" alt="Download Latest Release">
   </a>
 </p>
 
 ## 🚀 Get Started in 30 Seconds
 
-1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.0/monitor-layout-manager-v1.0.1-clean.zip)**
-2. **Unzip** and double-click **`monitor-layout`**
+1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.1/MonitorLayoutManager-macOS-v1.0.1-FINAL.zip)**
+2. **Unzip** and double-click **`Monitor Layout Manager.app`**
 3. **Done!** 🎉
 
-> **Just want to try it?** Double-click the `monitor-layout` file after download. It handles everything automatically.
+> **Just want to try it?** Double-click the `Monitor Layout Manager.app` after download. It handles everything automatically.
 
 ## ✨ What It Does
 
