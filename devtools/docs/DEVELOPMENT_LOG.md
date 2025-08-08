@@ -128,6 +128,12 @@ Download → Unzip → Double-click monitor-layout → GUI opens directly
 [2025-01-08 15:55:09] CLEAN_RELEASES: Removed old confusing assets from previous releases, kept only essential Monitor_Layout_Manager.zip
 [2025-01-08 15:55:12] README_UPDATED: Updated all download links to point to clean v1.0.3 release with security step included
 [2025-01-08 15:55:15] PERFECT_UX_FINAL: ✅ Ultimate user experience achieved - simple name, clear instructions, auto-installer, security guidance, one-click success
+[2025-01-08 16:02:00] CRITICAL_FIX: Fixed .app bundle launcher to auto-run install.sh instead of showing "Dependencies not installed" error dialog
+[2025-01-08 16:02:03] AUTO_INSTALLER_COMPLETE: Launcher now detects missing dependencies → runs ./install.sh → retries with .venv → launches GUI seamlessly
+[2025-01-08 16:02:06] VERSION_UPDATE: Updated Info.plist to version 1.0.3 to match GitHub release
+[2025-01-08 16:02:09] PROJECT_CLEANUP: Created devtools/ directory, moved docs/ and .editorconfig for cleaner user-facing root directory
+[2025-01-08 16:02:12] FINAL_ZIP_RECREATED: Updated Monitor_Layout_Manager.zip (322KB) with fixed auto-installer launcher
+[2025-01-08 16:02:15] PERFECT_ONE_CLICK: ✅ Achieved true one-click experience - download → unzip → double-click → auto-installs → GUI launches (no user intervention)
 
 ---
 
