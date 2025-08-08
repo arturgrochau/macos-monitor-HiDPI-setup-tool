@@ -1,3 +1,9 @@
+# MIT License
+# Copyright (c) 2025 Artur Grochau
+# 
+# This file is part of Monitor Layout Manager.
+# See the LICENSE file in the root directory for full license text.
+
 """
 Advanced CLI Interface for Monitor Layout Manager
 """
@@ -41,7 +47,7 @@ def print_banner():
 @click.option("--debug", is_flag=True, help="Enable debug mode.")
 @click.pass_context
 def cli(ctx, debug):
-    """Advanced Monitor Layout Manager - Command Line Interface"""
+    """Advanced CLI Module - Command-line interface with full feature access"""
     ctx.ensure_object(dict)
     ctx.obj['debug'] = debug
     if debug:

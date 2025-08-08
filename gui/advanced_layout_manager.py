@@ -1,6 +1,12 @@
+# MIT License
+# Copyright (c) 2025 Artur Grochau
+# 
+# This file is part of Monitor Layout Manager.
+# See the LICENSE file in the root directory for full license text.
+
 """
-Advanced Monitor Layout Manager GUI
-A sophisticated Tkinter-based interface for managing monitor layouts with drag-and-drop positioning.
+Advanced Layout Manager GUI - Main application window with visual display configuration
+Provides intuitive drag-and-drop display arrangement and layout management
 """
 
 import tkinter as tk

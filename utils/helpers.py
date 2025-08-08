@@ -1,5 +1,12 @@
+# MIT License
+# Copyright (c) 2025 Artur Grochau
+# 
+# This file is part of Monitor Layout Manager.
+# See the LICENSE file in the root directory for full license text.
+
 """
-Utility functions for the Monitor Layout Manager
+Helper Utilities Module - Common utility functions
+Shared functionality across the Monitor Layout Manager application
 """
 
 import subprocess

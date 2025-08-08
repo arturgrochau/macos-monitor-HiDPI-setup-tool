@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-#
+# MIT License
+# Copyright (c) 2025 Artur Grochau
+# 
+# This file is part of Monitor Layout Manager.
+# See the LICENSE file in the root directory for full license text.
+
 # Global CLI wrapper for Monitor Setup Tool
 # This provides 'monitor-layout' command system-wide
-#
 
 # Find the installation directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

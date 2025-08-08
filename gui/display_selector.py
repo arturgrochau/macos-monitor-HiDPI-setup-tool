@@ -1,3 +1,14 @@
+# MIT License
+# Copyright (c) 2025 Artur Grochau
+# 
+# This file is part of Monitor Layout Manager.
+# See the LICENSE file in the root directory for full license text.
+
+"""
+Display Selector Dialog - Monitor configuration and layout setup
+Provides interface for selecting display configurations and arrangements
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
