@@ -1,22 +1,29 @@
-🖥️ Monitor Layout Manager - Quick Start
+🖥️ Monitor Layout Manager - macOS App
 
 INSTALLATION:
-1. Download and extract this ZIP
-2. Double-click "Monitor Layout Manager" to launch GUI
-3. That's it! No terminal setup required.
+1. Download and extract this ZIP  
+2. Double-click "Monitor Layout Manager.app" to launch
+3. Done! The app icon will display properly in Dock and Finder
 
-FIRST RUN:
-- App will auto-create Python virtual environment
-- GUI opens automatically for layout management
-- Create layouts, save them, switch between them
-
-CLI MODE (optional):
-- Run: ./Monitor\ Layout\ Manager --cli detect
-- Or: python3 main.py --cli detect
+FEATURES:
+✅ Custom icon displays correctly on macOS
+✅ Auto-creates Python virtual environment on first run
+✅ Drag-and-drop layout management interface  
+✅ Save and switch between monitor configurations
+✅ Works with multiple displays and HiDPI scaling
 
 REQUIREMENTS:
 - macOS 10.14+
-- displayplacer (installed via: brew install displayplacer)
-- Python 3.8+ (usually pre-installed)
+- displayplacer (install via: brew install displayplacer)
+- Python 3.8+ (usually pre-installed on macOS)
+
+FIRST RUN:
+The app will automatically detect your displays and create
+a virtual environment for Python dependencies.
+
+CLI MODE (Advanced):
+Right-click app → Show Package Contents → Contents/MacOS/
+Run: ./Monitor\ Layout\ Manager --cli detect
 
 Created by Artur Grochau
+https://github.com/arturgrochau/monitor-setup-tool

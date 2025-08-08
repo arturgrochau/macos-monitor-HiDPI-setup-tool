@@ -72,3 +72,23 @@ debug.log
 tmp/
 temp/
 *.tmp
+
+# Build artifacts and distributions
+*.zip
+*.app
+dist-final/
+
+# macOS specific files
+.DS_Store
+.DS_Store?
+._*
+# Distribution and build artifacts
+*.zip
+*.app
+dist-final/
+.DS_Store
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
