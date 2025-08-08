@@ -3,19 +3,7 @@
 
 set -e  # Exit on any error
 
-echo "�️  echo ""
-echo "✅ Installation Complete!"
-echo ""
-echo "🚀 Quick Start:"
-echo "  1️⃣ Launch GUI:    ./monitor-layout"
-echo "  2️⃣ Launch CLI:    ./monitor-layout --cli detect"  
-echo "  3️⃣ Global CLI:    monitor-layout (after restart)"
-echo ""
-echo "💡 The GUI lets you drag monitors around to position them."
-echo ""
-
-# Optional auto-launch prompt
-read -p "🎯 Launch GUI now? (y/N): " launch_guianager - Installation"
+echo "🖥️  Monitor Layout Manager - Installation"
 echo "========================================"
 
 # Check if we're on macOS
@@ -125,7 +113,7 @@ fi
 
 echo ""
 echo "🔗 Setting up unified entry point..."
-chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui 2>/dev/null || true
+chmod +x monitor-layout scripts/monitor-cli scripts/monitor-gui "Monitor Layout Manager" 2>/dev/null || true
 
 echo ""
 echo "🎉 Installation Complete! 🎉"
@@ -145,7 +133,7 @@ echo ""
 # Optional auto-launch prompt
 read -p "🎯 Launch GUI now? (y/N): " launch_gui
 if [[ "$launch_gui" =~ ^[Yy]$ ]]; then
-    echo "� Launching Monitor Layout Manager..."
+    echo "🚀 Launching Monitor Layout Manager..."
     ./monitor-layout
 else
     echo "👋 Run './monitor-layout' when ready!"
