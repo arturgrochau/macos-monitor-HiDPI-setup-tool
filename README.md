@@ -32,7 +32,7 @@
 
 ## 🖼️ Preview
 
-![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
+![GUI Preview](devtools/docs/assets/Advanced_Monitor_Layout_Manager.png)
 
 ## 🔧 System Requirements
 
@@ -45,8 +45,8 @@
 
 **🔧 GUI not launching?** Install GUI support: `brew install python-tk`  
 **🔧 Still not working?** Run `./install.sh` in terminal first  
-**📚 Want more?** Check the [Complete Guide](docs/README_detailed.md)  
-**🐠 Fish user?** See [Fish Integration](docs/FISH_GUIDE.md)  
+**📚 Want more?** Check the [Complete Guide](devtools/docs/README_detailed.md)  
+**🐠 Fish user?** See [Fish Integration](devtools/docs/FISH_GUIDE.md)  
 
 **🍎 macOS blocked the app?**
 1. Go to **System Settings > Privacy & Security**
