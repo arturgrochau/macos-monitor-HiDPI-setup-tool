@@ -29,7 +29,7 @@
 🔄 **Auto-detects** all connected displays  
 ⚙️ **HiDPI scaling** and resolution control  
 
-## 🖼️ Screenshots
+
 
 ![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
 
