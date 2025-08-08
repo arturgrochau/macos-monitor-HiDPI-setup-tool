@@ -8,16 +8,17 @@
 **The simplest way to manage your Mac's monitor layouts. Drag, drop, save, apply.**
 
 <p align="center">
-  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.1/MonitorLayoutManager-macOS-v1.0.1-FINAL.zip">
+  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.3/Monitor_Layout_Manager.zip">
     <img src="https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge&logo=download" alt="Download Latest Release">
   </a>
 </p>
 
 ## 🚀 Get Started in 30 Seconds
 
-1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.1/MonitorLayoutManager-macOS-v1.0.1-FINAL.zip)**
+1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.3/Monitor_Layout_Manager.zip)**
 2. **Unzip** and double-click **`Monitor Layout Manager.app`**
-3. **Done!** 🎉
+3. **macOS Security:** System Settings > Privacy & Security > "Allow Anyway"
+4. **Done!** 🎉
 
 > **Just want to try it?** Double-click the `Monitor Layout Manager.app` after download. It handles everything automatically.
 
@@ -37,11 +38,13 @@
 
 - macOS 10.15+ (Catalina or newer)
 - Python 3.8+ (usually pre-installed)
+- GUI support: `brew install python-tk` (if GUI doesn't launch)
 - Any monitor setup (USB-C, HDMI, DisplayPort, etc.)
 
 ## 🆘 Need Help?
 
-**🔧 Not working?** Run `./install.sh` in terminal first  
+**🔧 GUI not launching?** Install GUI support: `brew install python-tk`  
+**🔧 Still not working?** Run `./install.sh` in terminal first  
 **📚 Want more?** Check the [Complete Guide](docs/README_detailed.md)  
 **🐠 Fish user?** See [Fish Integration](docs/FISH_GUIDE.md)  
 

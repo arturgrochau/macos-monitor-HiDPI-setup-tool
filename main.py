@@ -6,12 +6,39 @@ A sophisticated macOS monitor layout manager with visual configuration.
 
 import sys
 import os
+import subprocess
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+def auto_install_dependencies():
+    """Auto-install dependencies if missing (beginner-friendly approach)."""
+    try:
+        import tkinter
+        import click
+        # If both imports succeed, dependencies are available
+        return True
+    except ImportError:
+        print("🔧 Installing missing dependencies...")
+        try:
+            # Run install.sh to set up everything
+            subprocess.run(["./install.sh"], check=True, cwd=os.path.dirname(os.path.abspath(__file__)))
+            print("✅ Dependencies installed successfully!")
+            # Restart the script with the same arguments
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except subprocess.CalledProcessError:
+            print("❌ Failed to install dependencies automatically.")
+            print("💡 Please run: ./install.sh")
+            sys.exit(1)
+        except FileNotFoundError:
+            print("❌ install.sh not found. Please download the complete project.")
+            sys.exit(1)
+
 def check_setup():
     """Validate that setup is complete before launching."""
+    # First try auto-installation of dependencies
+    auto_install_dependencies()
+    
     # Check if .venv exists
     if not os.path.exists('.venv'):
         print("❗ Setup not complete. Run `./install.sh` first.")
