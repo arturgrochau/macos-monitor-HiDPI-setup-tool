@@ -1,5 +1,5 @@
 # Monitor Layout Manager
-
+![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
 
 [![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge)](https://github.com/arturgrochau/monitor-setup-tool/releases/latest)
 [![macOS](https://img.shields.io/badge/macOS-10.15+-blue)](https://support.apple.com/macos)
@@ -24,10 +24,6 @@ Professional macOS monitor layout manager with drag-and-drop interface.
 ⚡ **One-click switching** between saved layouts  
 🔄 **Auto-detects** all connected displays  
 ⚙️ **HiDPI scaling** and resolution control  
-
-## 🖼️ Preview
-
-![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
 
 ## 🔧 System Requirements
 
