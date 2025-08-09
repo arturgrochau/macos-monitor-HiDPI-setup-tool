@@ -16,90 +16,44 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# Virtual Environment
-.venv/
-venv/
+# Virtual environments
+.env
+.venv
 env/
+venv/
 ENV/
+env.bak/
+venv.bak/
 
-# IDE / Editor
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 
-# Thumbnails
-._*
-
-# App bundles and distributions
-*.app/
+# Build artifacts / bundles
+dist/
+dist-*/
+release-*/
+test-extract/
+*.app
 *.zip
 *.dmg
-dist*/
-build/
-test-extract/
+__pycache__/
+*.pyc
+.venv/
 
-# Logs
-*.log
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Project specific
-*.log
-layout_store.json
-backup_layouts.json
-debug.log
-
-# Fish shell completions (if symlinked)
-.config/
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Build artifacts and distributions
-*.zip
-*.app
-dist-final/
-
-# macOS specific files
-.DS_Store
-.DS_Store?
-._*
-# Distribution and build artifacts
-*.zip
-*.app
-dist-final/
-.DS_Store
-
-# macOS specific
-.DS_Store
-.AppleDouble
-.LSOverride
+# Monitor layout data
+.monitor-layout/

@@ -1,23 +1,17 @@
-# 🖥️ Monitor Layout Manager
+# Monitor Layout Manager
 
-**Created by Artur Grochau - MIT Licensed**
+![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
 
-[![macOS](https://img.shields.io/badge/macOS-10.15+-blue.svg)](https://www.apple.com/macos/)
-[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/arturgrochau/monitor-setup-tool/total.svg)](https://github.com/arturgrochau/monitor-setup-tool/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge)](https://github.com/arturgrochau/monitor-setup-tool/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-10.15+-blue)](https://support.apple.com/macos)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue)](https://www.python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-**The simplest way to manage your Mac's monitor layouts. Drag, drop, save, apply.**
-
-<p align="center">
-  <a href="https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.3/Monitor_Layout_Manager.zip">
-    <img src="https://img.shields.io/badge/Download-Latest%20Release-brightgreen?style=for-the-badge&logo=download" alt="Download Latest Release">
-  </a>
-</p>
+Professional macOS monitor layout manager with drag-and-drop interface.
 
 ## 🚀 Get Started in 30 Seconds
 
-1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.0.3/Monitor_Layout_Manager.zip)**
+1. **[Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.5.0/Monitor_Layout_Manager_macOS.zip)**
 2. **Unzip** and double-click **`Monitor Layout Manager.app`**
 3. **macOS Security:** System Settings > Privacy & Security > "Allow Anyway"
 4. **Done!** 🎉
@@ -34,7 +28,7 @@
 
 ## 🖼️ Preview
 
-![GUI Preview](devtools/docs/assets/Advanced_Monitor_Layout_Manager.png)
+![GUI Preview](docs/assets/Advanced_Monitor_Layout_Manager.png)
 
 ## 🔧 System Requirements
 
