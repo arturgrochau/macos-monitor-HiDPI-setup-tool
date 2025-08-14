@@ -36,12 +36,7 @@ jobs:
           pip install -r requirements.txt
           pip install py2app Pillow
 
-      - name: 🎨 Create app icon
-        run: |
-          source .venv/bin/activate
-          python create_icon.py
-
-      - name: 🏗️ Build macOS app
+      - name: ️ Build macOS app
         run: |
           source .venv/bin/activate
           python setup.py py2app
