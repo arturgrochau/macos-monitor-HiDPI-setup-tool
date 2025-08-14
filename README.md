@@ -46,7 +46,7 @@ macOS will ask for security permission:
 - **No terminal needed** - just a normal macOS app
 - **Works immediately** - no Python installation required  
 - **Smart detection** - finds all your monitors automatically
-- **Professional quality** - uses the same tech as `displayplacer`
+- **Professional quality** - uses the same tech as `displayplacer` without charging you for HiDPI
 
 *Built for everyone from beginners to power users*
 
