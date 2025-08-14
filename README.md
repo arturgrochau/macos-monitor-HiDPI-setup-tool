@@ -9,15 +9,13 @@ A sophisticated **macOS-only** monitor layout manager with visual drag-and-drop 
 ![Shell](https://img.shields.io/badge/Shell-Universal-orange?style=for-the-badge)
 ![GUI](https://img.shields.io/badge/GUI-Drag_Drop-purple?style=for-the-badge)
 
-### 🚀 One-Click Setup
+### 🚀 One-Click Download
 
-```bash
-git clone <repository-url>
-cd monitor-setup-tool
-./install.sh
-```
+**[📥 Download App (ZIP)](https://github.com/arturgrochau/monitor-setup-tool/releases/latest/download/Monitor-Layout-Manager-v1.0.0-macOS.zip)** • **[🔗 View Releases](https://github.com/arturgrochau/monitor-setup-tool/releases)** • **[📚 Documentation](#-features)**
 
-**[📥 Download ZIP](../../archive/main.zip)** • **[🔗 Clone Repository](../../)** • **[📚 Documentation](#-features)**
+**Ready-to-Run macOS App**: Download the ZIP, extract, and double-click the `.app` file - no installation needed!
+
+![Monitor Layout Manager Icon](app_icon.png)
 
 </div>
 
@@ -45,7 +43,19 @@ cd monitor-setup-tool
 
 ## ⚡ Quick Start
 
-### 🎯 One-Command Setup & Launch
+### 🖥️ For End Users (Recommended)
+
+**Download the ready-to-run app:**
+1. **[📥 Download the App ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/latest/download/Monitor-Layout-Manager-v1.0.0-macOS.zip)**
+2. **Extract the ZIP** and double-click `Monitor Layout Manager.app`
+3. **Allow permissions** when macOS prompts for display control
+4. **Start creating layouts!** - Drag monitors around, save as "Home", "Work", etc.
+
+*No installation, dependencies, or terminal commands required!*
+
+### 🛠️ For Developers
+
+**Build from source:**
 
 ```bash
 git clone https://github.com/arturgrochau/monitor-setup-tool.git
