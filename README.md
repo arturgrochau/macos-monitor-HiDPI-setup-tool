@@ -9,7 +9,7 @@
 
 ## 🚀 Get Started in 30 Seconds
 
-1. **[📥 Download ZIP](https://github.com/arturgrochau/monitor-setup-tool/releases/download/v1.4.0/Monitor-Layout-Manager-v1.4.0-macOS.zip)**
+1. **[📥 Download ZIP](https://github.com/arturgrochau/macos-monitor-HiDPI-setup-tool/releases/download/v1.3.0/Monitor-Layout-Manager-v1.3.0-macOS.zip)**
 2. **Unzip** and double-click **`Monitor Layout Manager.app`**
 3. **macOS Security:** System Settings > Privacy & Security > "Allow Anyway"
 4. **Start arranging!** Drag monitors around, save layouts like "Home", "Work"
