@@ -52,11 +52,20 @@ macOS will ask for security permission:
 
 ---
 
+## Building and Running from Sources
+
+1. Get https://github.com/jakehilborn/displayplacer, e.g. `brew install displayplacer`
+2. Install Python dependencies
+3. Build
+4. Run [main.py](/main.py) with python
+
+<!--
 ## 🙋‍♀️ Need Help?
 
 **Have an issue?** [Open a GitHub issue](https://github.com/arturgrochau/monitor-setup-tool/issues) or check our [troubleshooting guide](https://github.com/arturgrochau/monitor-setup-tool/wiki).
 
 **For developers:** Want to build from source? Check the [developer docs](https://github.com/arturgrochau/monitor-setup-tool/blob/main/DEVELOPMENT.md).
+-->
 
 ---
 
