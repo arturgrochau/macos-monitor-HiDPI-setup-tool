@@ -34,23 +34,28 @@ jobs:
           # Expose brew Python in PATH for the rest of the job
           if   [ -x "/opt/homebrew/opt/python@3.12/bin/python3.12" ]; then
             echo "/opt/homebrew/opt/python@3.12/bin" >> "$GITHUB_PATH"
+            BREW_PY="/opt/homebrew/opt/python@3.12/bin/python3.12"
           elif [ -x "/usr/local/opt/python@3.12/bin/python3.12" ]; then
             echo "/usr/local/opt/python@3.12/bin" >> "$GITHUB_PATH"
+            BREW_PY="/usr/local/opt/python@3.12/bin/python3.12"
           fi
+          echo "BREW_PY=${BREW_PY}" >> "$GITHUB_ENV"
 
       - name: Install Python dependencies
         run: |
-          python3.12 -m pip install --upgrade pip --quiet
-          python3.12 -m pip install -r requirements.txt -r requirements-dev.txt --quiet
+          # Use --break-system-packages so pip works on externally-managed Homebrew Python
+          "$BREW_PY" -m pip install --upgrade pip --quiet --break-system-packages
+          "$BREW_PY" -m pip install -r requirements.txt -r requirements-dev.txt \
+            --quiet --break-system-packages
 
       - name: Read version
         id: ver
         run: |
-          VER=$(python3.12 -c "from version import __version__; print(__version__)")
+          VER=$("$BREW_PY" -c "from version import __version__; print(__version__)")
           echo "version=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Build app bundle
-        run: python3.12 setup.py py2app --quiet
+        run: "$BREW_PY" setup.py py2app --quiet
 
       - name: Package ZIP
         run: |
