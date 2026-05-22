@@ -45,7 +45,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          ${BREW_PY} -m pip install --upgrade pip --quiet --break-system-packages
+          # Skip pip self-upgrade (Homebrew pip has no RECORD file and can't self-update)
           ${BREW_PY} -m pip install -r requirements.txt -r requirements-dev.txt \
             --quiet --break-system-packages
 
