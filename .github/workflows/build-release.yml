@@ -1,0 +1,159 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  # ── Build on both architectures ─────────────────────────────────────────────
+  build:
+    name: Build — ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            label: Apple-Silicon
+          - runner: macos-13
+            label: Intel
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.12 + tkinter
+        run: |
+          brew install python@3.12 python-tk@3.12
+          # Expose brew Python in PATH for the rest of the job
+          if   [ -x "/opt/homebrew/opt/python@3.12/bin/python3.12" ]; then
+            echo "/opt/homebrew/opt/python@3.12/bin" >> "$GITHUB_PATH"
+          elif [ -x "/usr/local/opt/python@3.12/bin/python3.12" ]; then
+            echo "/usr/local/opt/python@3.12/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Install Python dependencies
+        run: |
+          python3.12 -m pip install --upgrade pip --quiet
+          python3.12 -m pip install -r requirements.txt -r requirements-dev.txt --quiet
+
+      - name: Read version
+        id: ver
+        run: |
+          VER=$(python3.12 -c "from version import __version__; print(__version__)")
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Build app bundle
+        run: python3.12 setup.py py2app --quiet
+
+      - name: Package ZIP
+        run: |
+          ZIPNAME="Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-${{ matrix.label }}.zip"
+          cd dist
+          zip -r -q "../${ZIPNAME}" "Monitor Layout Manager.app"
+          echo "ZIPNAME=${ZIPNAME}" >> "$GITHUB_ENV"
+          echo "VERSION=${{ steps.ver.outputs.version }}" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.label }}
+          path: "Monitor-Layout-Manager-*.zip"
+          retention-days: 2
+
+  # ── Create GitHub release and close fixed issues ────────────────────────────
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version
+        id: ver
+        run: |
+          VER=$(grep "__version__" version.py | sed "s/.*'\(.*\)'.*/\1/")
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.ver.outputs.version }}"
+          name: "Monitor Layout Manager v${{ steps.ver.outputs.version }}"
+          files: artifacts/*.zip
+          body: |
+            ## Monitor Layout Manager v${{ steps.ver.outputs.version }}
+
+            ### Downloads
+
+            | Platform | File |
+            |----------|------|
+            | 🍎 **Apple Silicon** (M1 / M2 / M3 / M4) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Apple-Silicon.zip` |
+            | 🖥️ **Intel Mac** (2020 and earlier) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip` |
+
+            > **Not sure which?** Apple menu → About This Mac → look for "Apple M" (Silicon) or "Intel Core".
+
+            ### What's New
+
+            - **Fixed: displayplacer path detection** — works now regardless of Homebrew prefix (Intel `/usr/local` or Apple Silicon `/opt/homebrew`), `uv`, pyenv, or custom install paths
+            - **Fixed: GUI rectangles jump when zooming** — canvas coordinate system rewritten; positions are stored in display-space and rendered cleanly at any zoom level
+            - **Fixed: rectangles disappear on resolution change** — resolution changes now only resize the rect, never reposition it
+            - **HiDPI auto-recommendation** — changing a display's resolution now auto-ticks HiDPI if the resolution warrants it
+            - **Unsaved changes indicator** in toolbar
+            - **Better launch error messages** — specific dialogs for import errors, missing displayplacer, and bundle path failures
+            - **DEVELOPMENT.md** added for contributors
+            - Minimum macOS requirement: **13 Ventura** (dropped 10.15 Catalina support)
+            - Version centralized in `version.py`; all modules read from it
+
+            ### First Run
+
+            1. Download the ZIP for your Mac type above
+            2. Unzip → double-click `Monitor Layout Manager.app`
+            3. **Security warning?** System Settings → Privacy & Security → **Open Anyway**
+            4. **Allow** display control when prompted
+          draft: false
+          prerelease: false
+
+      - name: Close fixed issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REPO="${{ github.repository }}"
+
+          gh issue close 2 --repo "$REPO" --comment \
+            "Fixed in v${{ steps.ver.outputs.version }}: \`displayplacer\` is now discovered dynamically using \`shutil.which()\` and falls back to both Homebrew prefixes (\`/opt/homebrew/bin\` for Apple Silicon, \`/usr/local/bin\` for Intel). It works with \`uv\`, pyenv, and custom installs — no more hardcoded path."
+
+          gh issue close 3 --repo "$REPO" --comment \
+            "Resolved in v${{ steps.ver.outputs.version }}: runtime dependencies are in \`requirements.txt\` (click, rich, colorama, pygments, markdown-it-py); build-only dependency py2app is in \`requirements-dev.txt\`. tkinter is system-provided via \`brew install python-tk\`. See \`DEVELOPMENT.md\` for the full breakdown."
+
+          gh issue close 4 --repo "$REPO" --comment \
+            "Fixed in v${{ steps.ver.outputs.version }}: \`DEVELOPMENT.md\` has been added to the repository with full build instructions, project architecture, and contribution guide. The README has also been updated to link to it correctly."
+
+          gh issue close 5 --repo "$REPO" --comment \
+            "Thanks for the pointer! macdisp uses private macOS APIs which makes it less stable across OS updates. We're sticking with displayplacer as the backend (it's been the most reliable option) but have improved how we discover its path — so it now works regardless of where it's installed."
+
+          gh issue close 6 --repo "$REPO" --comment \
+            "Fixed in v${{ steps.ver.outputs.version }}: the GUI's coordinate system was rewritten. Display positions are now stored in display-space pixels and converted to canvas coordinates only at render time. Changing a display's resolution updates the rectangle size without touching the position, so rectangles no longer disappear or jump out of the visible area."
+
+          gh issue close 8 --repo "$REPO" --comment \
+            "Fixed in v${{ steps.ver.outputs.version }}: the root cause was the scale slider triggering a full redraw that used canvas-space coordinates (which change with scale). The canvas origin is now fixed — display (0, 0) always maps to the same canvas anchor point — so moving the zoom slider no longer repositions any rectangles."
+
+          gh issue close 9 --repo "$REPO" --comment \
+            "Fixed in v${{ steps.ver.outputs.version }}: \`app_launcher.py\` has been rewritten with proper error dialogs at every failure point (import errors, bundle path issues, missing displayplacer). If the app still shows a py2app launch error on your system, please run \`python main.py --cli doctor\` from the project directory and share the output — it will pinpoint the exact issue."
+
+          gh issue close 1 --repo "$REPO" --comment \
+            "Addressed in v${{ steps.ver.outputs.version }}: improved startup error handling now shows a specific error dialog instead of a silent crash. The app bundle is now built and tested on macOS 15 (Apple Silicon). If you're still seeing a crash on macOS 26 Beta, please try the new download and share any error dialog text — macOS 26 is pre-release so there may be additional compatibility work needed."

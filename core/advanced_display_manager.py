@@ -10,6 +10,8 @@ from typing import Dict, List, Optional, Tuple
 import re
 from dataclasses import dataclass, asdict
 
+from utils.displayplacer import find_displayplacer
+
 @dataclass
 class Display:
     """Represents a display with all its properties"""
@@ -37,17 +39,20 @@ class LayoutProfile:
 
 class AdvancedDisplayManager:
     """Advanced display manager with dynamic detection and layout persistence"""
-    
-    DISPLAYPLACER = "/opt/homebrew/bin/displayplacer"
+
     LAYOUTS_FILE = os.path.expanduser("~/.monitor_layouts.json")
-    
+
     def __init__(self):
+        self.DISPLAYPLACER = find_displayplacer()
         self.displays: Dict[str, Display] = {}
         self.layouts: Dict[str, LayoutProfile] = {}
         self.load_layouts()
     
     def detect_displays(self) -> Dict[str, Display]:
         """Detect all connected displays and their properties"""
+        if not self.DISPLAYPLACER:
+            print("Error: displayplacer not found. Install with: brew install jakehilborn/jakehilborn/displayplacer")
+            return {}
         try:
             output = subprocess.check_output([self.DISPLAYPLACER, "list"], text=True)
             self.displays = self._parse_display_output(output)
@@ -263,15 +268,25 @@ class AdvancedDisplayManager:
             print(f"Error saving layouts: {e}")
     
     def _execute_displayplacer_commands(self, commands: List[str]) -> bool:
-        """Execute displayplacer commands"""
+        """Execute displayplacer commands.
+
+        displayplacer takes each display config as a separate quoted argument:
+          displayplacer "id:A res:..." "id:B res:..."
+        We pass all configs in one call so it sets all displays atomically.
+        """
+        if not self.DISPLAYPLACER:
+            print("Error: displayplacer not found")
+            return False
+        if not commands:
+            return True
         try:
-            for cmd in commands:
-                full_cmd = f'{self.DISPLAYPLACER} "{cmd}"'
-                print(f"Executing: {full_cmd}")
-                result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True)
-                if result.returncode != 0:
-                    print(f"Command failed: {result.stderr}")
-                    return False
+            result = subprocess.run(
+                [self.DISPLAYPLACER] + commands,
+                capture_output=True, text=True
+            )
+            if result.returncode != 0:
+                print(f"displayplacer failed: {result.stderr}")
+                return False
             return True
         except Exception as e:
             print(f"Error executing commands: {e}")

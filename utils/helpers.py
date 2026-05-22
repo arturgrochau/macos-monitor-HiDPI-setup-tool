@@ -9,21 +9,33 @@ import os
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime
 
-def validate_displayplacer_installation(path: str = "/opt/homebrew/bin/displayplacer") -> bool:
-    """Validate that displayplacer is properly installed"""
+from utils.displayplacer import find_displayplacer
+
+
+def validate_displayplacer_installation(path: str = None) -> bool:
+    """Validate that displayplacer is installed and runnable."""
+    if path is None:
+        path = find_displayplacer()
+    if path is None:
+        return False
     try:
-        result = subprocess.run([path, "--version"], capture_output=True, text=True)
+        result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
-    except FileNotFoundError:
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         return False
 
-def get_displayplacer_help(path: str = "/opt/homebrew/bin/displayplacer") -> str:
-    """Get displayplacer help information"""
+
+def get_displayplacer_help(path: str = None) -> str:
+    """Get displayplacer help information."""
+    if path is None:
+        path = find_displayplacer()
+    if path is None:
+        return "displayplacer not found"
     try:
-        result = subprocess.run([path, "--help"], capture_output=True, text=True)
+        result = subprocess.run([path, "--help"], capture_output=True, text=True, timeout=5)
         return result.stdout if result.returncode == 0 else "Help not available"
-    except FileNotFoundError:
-        return "DisplayPlacer not found"
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return "displayplacer not found"
 
 def parse_resolution_string(res_string: str) -> Tuple[int, int]:
     """Parse resolution string like '1920x1080' into tuple"""
@@ -143,9 +155,11 @@ def backup_current_layout(backup_dir: str = None) -> str:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = os.path.join(backup_dir, f"layout_backup_{timestamp}.json")
     
+    dp_path = find_displayplacer()
     try:
-        # Get current layout using displayplacer
-        result = subprocess.run(["/opt/homebrew/bin/displayplacer", "list"], 
+        if dp_path is None:
+            return ""
+        result = subprocess.run([dp_path, "list"],
                                capture_output=True, text=True)
         
         if result.returncode == 0:

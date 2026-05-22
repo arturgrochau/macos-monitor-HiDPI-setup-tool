@@ -1,0 +1,5 @@
+# Development / build-only dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# macOS app bundle packaging (build only, not needed to run from source)
+py2app>=0.28.6

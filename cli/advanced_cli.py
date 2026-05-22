@@ -13,25 +13,17 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
+from version import __version__
 from core.advanced_display_manager import AdvancedDisplayManager
 from utils.helpers import (
-    validate_displayplacer_installation, 
-    format_resolution, 
+    validate_displayplacer_installation,
+    format_resolution,
     backup_current_layout
 )
 
-def print_banner():
-    """Print application banner"""
-    banner = """
-╭─────────────────────────────────────────────╮
-│        Advanced Monitor Layout Manager      │
-│              by GitHub Copilot               │
-╰─────────────────────────────────────────────╯
-    """
-    click.echo(click.style(banner, fg='blue', bold=True))
 
 @click.group()
-@click.version_option(version='2.0.0')
+@click.version_option(version=__version__)
 @click.option("--debug", is_flag=True, help="Enable debug mode.")
 @click.pass_context
 def cli(ctx, debug):

@@ -7,6 +7,8 @@ from tkinter import ttk, filedialog, messagebox
 import json
 import os
 
+from utils.displayplacer import find_displayplacer
+
 class SettingsDialog:
     """Settings configuration dialog"""
     
@@ -33,7 +35,7 @@ class SettingsDialog:
         """Load settings from file"""
         settings_file = os.path.expanduser("~/.monitor_layout_settings.json")
         default_settings = {
-            "displayplacer_path": "/opt/homebrew/bin/displayplacer",
+            "displayplacer_path": find_displayplacer() or "",
             "auto_refresh": True,
             "show_grid": True,
             "grid_size": 50,
@@ -280,8 +282,10 @@ class SettingsDialog:
     def reset_defaults(self):
         """Reset all settings to defaults"""
         if messagebox.askyesno("Reset Settings", "Reset all settings to default values?"):
+            from utils.displayplacer import invalidate_cache
+            invalidate_cache()
             self.settings = {
-                "displayplacer_path": "/opt/homebrew/bin/displayplacer",
+                "displayplacer_path": find_displayplacer() or "",
                 "auto_refresh": True,
                 "show_grid": True,
                 "grid_size": 50,
