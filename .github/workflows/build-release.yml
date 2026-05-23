@@ -116,7 +116,7 @@ jobs:
       - name: Read version
         id: ver
         run: |
-          VER=$(grep "__version__" version.py | sed "s/.*'\(.*\)'.*/\1/")
+          VER=$(grep "__version__" version.py | sed 's/.*"\(.*\)".*/\1/')
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
 
       - name: Download Silicon artifact
