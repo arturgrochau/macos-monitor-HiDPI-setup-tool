@@ -56,7 +56,7 @@ jobs:
           path: "Monitor-Layout-Manager-*.zip"
           retention-days: 7
 
-  # ── Intel build (optional — runner availability permitting) ─────────────────
+  # ── Intel build (best-effort — runner availability permitting) ──────────────
   build-intel:
     name: Build — Intel
     runs-on: macos-13
@@ -103,11 +103,10 @@ jobs:
           path: "Monitor-Layout-Manager-*.zip"
           retention-days: 7
 
-  # ── Create GitHub release and close fixed issues ────────────────────────────
+  # ── Create GitHub release (runs as soon as Silicon is done) ─────────────────
   release:
     name: Create Release
-    needs: [build-silicon, build-intel]
-    if: always() && needs.build-silicon.result == 'success'
+    needs: build-silicon
     runs-on: ubuntu-latest
 
     steps:
@@ -120,11 +119,11 @@ jobs:
           VER=$(grep "__version__" version.py | sed "s/.*'\(.*\)'.*/\1/")
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
 
-      - name: Download all build artifacts
+      - name: Download Silicon artifact
         uses: actions/download-artifact@v4
         with:
+          name: build-Apple-Silicon
           path: artifacts/
-          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -140,7 +139,7 @@ jobs:
             | Platform | File |
             |----------|------|
             | 🍎 **Apple Silicon** (M1 / M2 / M3 / M4) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Apple-Silicon.zip` |
-            | 🖥️ **Intel Mac** (2020 and earlier) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip` (if available) |
+            | 🖥️ **Intel Mac** (2020 and earlier) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip` (added when runner available) |
 
             > **Not sure which?** Apple menu → About This Mac → look for "Apple M" (Silicon) or "Intel Core".
 
@@ -173,25 +172,51 @@ jobs:
           VER="${{ steps.ver.outputs.version }}"
 
           gh issue close 2 --repo "$REPO" --comment \
-            "Fixed in v${VER}: \`displayplacer\` is now discovered dynamically via \`shutil.which()\` and falls back to both Homebrew prefixes (\`/opt/homebrew/bin\` for Apple Silicon, \`/usr/local/bin\` for Intel). Works with \`uv\`, pyenv, and custom installs — no more hardcoded path. See \`utils/displayplacer.py\`."
+            "Fixed in v${VER}: \`displayplacer\` is now discovered dynamically via \`shutil.which()\` and falls back to both Homebrew prefixes (\`/opt/homebrew/bin\` for Apple Silicon, \`/usr/local/bin\` for Intel). Works with \`uv\`, pyenv, and custom installs — no more hardcoded path. See \`utils/displayplacer.py\`." 2>/dev/null || true
 
           gh issue close 3 --repo "$REPO" --comment \
-            "Resolved in v${VER}: runtime dependencies are in \`requirements.txt\` (click, rich, colorama, pygments, markdown-it-py). Build-only dependency py2app is in \`requirements-dev.txt\`. tkinter is system-provided via \`brew install python-tk\`. See \`DEVELOPMENT.md\` for the full breakdown."
+            "Resolved in v${VER}: runtime dependencies are in \`requirements.txt\` (click, rich, colorama, pygments, markdown-it-py). Build-only dependency py2app is in \`requirements-dev.txt\`. tkinter is system-provided via \`brew install python-tk\`. See \`DEVELOPMENT.md\` for the full breakdown." 2>/dev/null || true
 
           gh issue close 4 --repo "$REPO" --comment \
-            "Fixed in v${VER}: \`DEVELOPMENT.md\` now exists with full build instructions, architecture overview, and contribution guide. README links to it correctly."
+            "Fixed in v${VER}: \`DEVELOPMENT.md\` now exists with full build instructions, architecture overview, and contribution guide. README links to it correctly." 2>/dev/null || true
 
           gh issue close 5 --repo "$REPO" --comment \
-            "Thanks for the pointer! macdisp uses private macOS APIs which makes it less stable across OS updates. Staying with displayplacer as the backend, but improved path discovery so it works regardless of where it's installed."
+            "Thanks for the pointer! macdisp uses private macOS APIs which makes it less stable across OS updates. Staying with displayplacer as the backend, but improved path discovery so it works regardless of where it's installed." 2>/dev/null || true
 
           gh issue close 6 --repo "$REPO" --comment \
-            "Fixed in v${VER}: the GUI coordinate system was rewritten. Positions are stored in display-space pixels and converted to canvas coordinates only at render time. Resolution changes now only resize the rectangle — they don't touch the position — so rectangles no longer disappear or jump."
+            "Fixed in v${VER}: the GUI coordinate system was rewritten. Positions are stored in display-space pixels and converted to canvas coordinates only at render time. Resolution changes now only resize the rectangle — they don't touch the position — so rectangles no longer disappear or jump." 2>/dev/null || true
 
           gh issue close 8 --repo "$REPO" --comment \
-            "Fixed in v${VER}: root cause was the zoom slider triggering a full redraw that used canvas-space coordinates (which change with zoom level). Canvas now has a fixed origin — display (0,0) always maps to the same canvas anchor — so zooming no longer repositions any rectangles."
+            "Fixed in v${VER}: root cause was the zoom slider triggering a full redraw that used canvas-space coordinates (which change with zoom level). Canvas now has a fixed origin — display (0,0) always maps to the same canvas anchor — so zooming no longer repositions any rectangles." 2>/dev/null || true
 
           gh issue close 9 --repo "$REPO" --comment \
-            "Fixed in v${VER}: \`app_launcher.py\` rewritten with specific error dialogs at every failure point (import errors, bundle path issues, missing displayplacer). If still seeing a py2app error, run \`python main.py --cli doctor\` and share the output."
+            "Fixed in v${VER}: \`app_launcher.py\` rewritten with specific error dialogs at every failure point (import errors, bundle path issues, missing displayplacer). If still seeing a py2app error, run \`python main.py --cli doctor\` and share the output." 2>/dev/null || true
 
           gh issue close 1 --repo "$REPO" --comment \
-            "Addressed in v${VER}: improved startup error handling now shows a specific dialog instead of a silent crash. The app bundle is built and tested on macOS 15 Apple Silicon in CI. If still crashing on macOS 26 Beta, please try the new download and share any error dialog text — macOS 26 is pre-release and may need additional compatibility work."
+            "Addressed in v${VER}: improved startup error handling now shows a specific dialog instead of a silent crash. The app bundle is built and tested on macOS 15 Apple Silicon in CI. If still crashing on macOS 26 Beta, please try the new download and share any error dialog text — macOS 26 is pre-release and may need additional compatibility work." 2>/dev/null || true
+
+  # ── Attach Intel ZIP to release once its runner eventually starts ────────────
+  upload-intel:
+    name: Attach Intel ZIP to Release
+    needs: [build-intel, release]
+    if: always() && needs.build-intel.result == 'success' && needs.release.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Read version
+        id: ver
+        run: |
+          VER=$(curl -s "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/version.py" | sed "s/.*'\(.*\)'.*/\1/")
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Download Intel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-Intel
+          path: artifacts/
+
+      - name: Upload Intel ZIP to existing release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          files: artifacts/*.zip
