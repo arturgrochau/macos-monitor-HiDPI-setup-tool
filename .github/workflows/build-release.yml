@@ -11,18 +11,10 @@ permissions:
   issues: write
 
 jobs:
-  # ── Build on both architectures ─────────────────────────────────────────────
-  build:
-    name: Build — ${{ matrix.label }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: macos-15
-            label: Apple-Silicon
-          - runner: macos-12
-            label: Intel
-    runs-on: ${{ matrix.runner }}
+  # ── Apple Silicon build (required) ──────────────────────────────────────────
+  build-silicon:
+    name: Build — Apple-Silicon
+    runs-on: macos-15
 
     steps:
       - name: Checkout
@@ -31,21 +23,13 @@ jobs:
       - name: Set up Python 3.12 with tkinter
         run: |
           brew install python@3.12 python-tk@3.12
-
-          # Determine the Homebrew prefix (ARM vs Intel)
-          if [ -d "/opt/homebrew" ]; then
-            BREW_PREFIX="/opt/homebrew"
-          else
-            BREW_PREFIX="/usr/local"
-          fi
-
+          BREW_PREFIX="/opt/homebrew"
           PY="${BREW_PREFIX}/opt/python@3.12/bin/python3.12"
           echo "BREW_PY=${PY}" >> "$GITHUB_ENV"
           echo "${BREW_PREFIX}/opt/python@3.12/bin" >> "$GITHUB_PATH"
 
       - name: Install Python dependencies
         run: |
-          # Skip pip self-upgrade (Homebrew pip has no RECORD file and can't self-update)
           ${BREW_PY} -m pip install -r requirements.txt -r requirements-dev.txt \
             --quiet --break-system-packages
 
@@ -61,21 +45,69 @@ jobs:
 
       - name: Package ZIP
         run: |
-          ZIPNAME="Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-${{ matrix.label }}.zip"
+          ZIPNAME="Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Apple-Silicon.zip"
           cd dist
           zip -r -q "../${ZIPNAME}" "Monitor Layout Manager.app"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.label }}
+          name: build-Apple-Silicon
           path: "Monitor-Layout-Manager-*.zip"
-          retention-days: 2
+          retention-days: 7
+
+  # ── Intel build (optional — runner availability permitting) ─────────────────
+  build-intel:
+    name: Build — Intel
+    runs-on: macos-13
+    continue-on-error: true
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12 with tkinter
+        run: |
+          brew install python@3.12 python-tk@3.12
+          BREW_PREFIX="/usr/local"
+          PY="${BREW_PREFIX}/opt/python@3.12/bin/python3.12"
+          echo "BREW_PY=${PY}" >> "$GITHUB_ENV"
+          echo "${BREW_PREFIX}/opt/python@3.12/bin" >> "$GITHUB_PATH"
+
+      - name: Install Python dependencies
+        run: |
+          ${BREW_PY} -m pip install -r requirements.txt -r requirements-dev.txt \
+            --quiet --break-system-packages
+
+      - name: Read version
+        id: ver
+        run: |
+          VER=$(${BREW_PY} -c "from version import __version__; print(__version__)")
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build app bundle
+        run: |
+          ${BREW_PY} setup.py py2app --quiet
+
+      - name: Package ZIP
+        run: |
+          ZIPNAME="Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip"
+          cd dist
+          zip -r -q "../${ZIPNAME}" "Monitor Layout Manager.app"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-Intel
+          path: "Monitor-Layout-Manager-*.zip"
+          retention-days: 7
 
   # ── Create GitHub release and close fixed issues ────────────────────────────
   release:
     name: Create Release
-    needs: build
+    needs: [build-silicon, build-intel]
+    if: always() && needs.build-silicon.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -108,7 +140,7 @@ jobs:
             | Platform | File |
             |----------|------|
             | 🍎 **Apple Silicon** (M1 / M2 / M3 / M4) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Apple-Silicon.zip` |
-            | 🖥️ **Intel Mac** (2020 and earlier) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip` |
+            | 🖥️ **Intel Mac** (2020 and earlier) | `Monitor-Layout-Manager-v${{ steps.ver.outputs.version }}-macOS-Intel.zip` (if available) |
 
             > **Not sure which?** Apple menu → About This Mac → look for "Apple M" (Silicon) or "Intel Core".
 
