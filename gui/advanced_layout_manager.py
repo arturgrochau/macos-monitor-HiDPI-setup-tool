@@ -1,79 +1,86 @@
 """
 Advanced Monitor Layout Manager GUI
 Tkinter-based interface for managing monitor layouts with drag-and-drop positioning.
+
+Coordinate model: display positions are displayplacer/CoreGraphics coordinates
+((0,0) = main display's top-left, y grows DOWN). The canvas renders that space
+directly (scale + centering offset, no axis flip), so the editor matches both
+System Settings and what `displayplacer` will actually apply.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, font
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 import json
-from datetime import datetime
 
 from core.advanced_display_manager import AdvancedDisplayManager, Display, LayoutProfile
 from utils.helpers import is_hidpi_recommended
+from gui.canvas_math import (
+    Rect,
+    clamp_to_view,
+    display_to_canvas,
+    fit_offset,
+    is_contiguous,
+    overlaps,
+    snap_position,
+)
 
-# Canvas coordinate constants — display (0,0) maps to this canvas position.
-# X grows right, Y grows down on canvas but up in display space.
-_CANVAS_ORIGIN_X = 100   # px from left edge
-_CANVAS_MARGIN_Y = 50    # px from bottom edge to display y=0
-
-
-def _display_to_canvas(display_x: int, display_y: int, display_h: int,
-                       canvas_h: int, scale: float) -> Tuple[float, float]:
-    """Convert display origin (bottom-left) → canvas top-left corner of the rect."""
-    cx = _CANVAS_ORIGIN_X + display_x * scale
-    cy = (canvas_h - _CANVAS_MARGIN_Y) - (display_y + display_h) * scale
-    return cx, cy
-
-
-def _canvas_to_display(rect_x1: float, rect_y2: float,
-                       canvas_h: int, scale: float) -> Tuple[int, int]:
-    """Convert canvas rect (x1, y2) → display coordinates of that rect's origin."""
-    dx = int((rect_x1 - _CANVAS_ORIGIN_X) / scale)
-    dy = int(((canvas_h - _CANVAS_MARGIN_Y) - rect_y2) / scale)
-    return dx, dy
+_SNAP_CANVAS_PX = 12          # snap radius, in canvas pixels
+_MIN_VISIBLE_PX = 40          # how much of a dragged rect must stay in view
 
 
 class DraggableDisplay:
-    """Draggable rectangle representing a physical display on the layout canvas."""
+    """Draggable rectangle representing a physical display on the layout canvas.
 
-    def __init__(self, canvas: tk.Canvas, display: Display, scale: float = 0.1):
+    The Display model is the single source of truth; the canvas items are a
+    projection of it. Dragging updates the model (with snapping) and re-renders.
+    """
+
+    def __init__(self, canvas: tk.Canvas, display: Display, view):
         self.canvas = canvas
         self.display = display
-        self.scale = scale
+        self.view = view                     # owner exposing .scale/.offset/.snap_rects
         self.rect_id: Optional[int] = None
         self.text_id: Optional[int] = None
         self.is_dragging = False
-        self.drag_start_x = 0
-        self.drag_start_y = 0
-        self.callbacks: Dict[str, list] = {'position_changed': []}
+        self._grab_dx = 0.0                  # pointer offset inside the rect (canvas px)
+        self._grab_dy = 0.0
+        self._drag_started_at: Optional[tuple] = None
+        self.callbacks: Dict[str, list] = {'position_changed': [], 'drag_finished': []}
 
         self.create_visual()
         self.bind_events()
 
-    def _canvas_height(self) -> int:
-        h = self.canvas.winfo_height()
-        return h if h > 10 else (self.canvas.winfo_reqheight() or 600)
+    # ── Rendering ────────────────────────────────────────────────────────────
+
+    def _canvas_rect(self):
+        dx, dy = self.display.current_position
+        cx, cy = display_to_canvas(dx, dy, self.view.offset, self.view.scale)
+        w = self.display.resolution[0] * self.view.scale
+        h = self.display.resolution[1] * self.view.scale
+        return cx, cy, w, h
+
+    def _label(self, rect_w: float) -> str:
+        if rect_w < 70:      # tiny rect: name only, keep clicks on the right display
+            return self.display.name.split(" (")[0]
+        hidpi_tag = " [HiDPI]" if self.display.scaling else ""
+        lines = [
+            self.display.name,
+            f"{self.display.resolution[0]}×{self.display.resolution[1]}{hidpi_tag}",
+            f"{self.display.hz}Hz" if self.display.hz else "",
+            "● Main" if self.display.is_main else "",
+        ]
+        return "\n".join(l for l in lines if l)
 
     def create_visual(self):
-        """Draw the rectangle and label from current display state."""
-        dx, dy = self.display.current_position
-        ch = self._canvas_height()
-        cx, cy = _display_to_canvas(dx, dy, self.display.resolution[1], ch, self.scale)
-        w = int(self.display.resolution[0] * self.scale)
-        h = int(self.display.resolution[1] * self.scale)
+        cx, cy, w, h = self._canvas_rect()
 
-        # Colours
         if self.display.type == "macbook":
-            fill_color = "#4A90E2"
-            outline_color = "#2E5C8A"
+            fill_color, outline_color = "#4A90E2", "#2E5C8A"
         else:
-            fill_color = "#5BA85A"
-            outline_color = "#3D7A3C"
-
+            fill_color, outline_color = "#5BA85A", "#3D7A3C"
         if self.display.is_main:
-            outline_color = "#E8702A"
-            outline_width = 4
+            outline_color, outline_width = "#E8702A", 4
         else:
             outline_width = 2
 
@@ -82,24 +89,25 @@ class DraggableDisplay:
             fill=fill_color, outline=outline_color, width=outline_width,
             tags=("display", f"display_{self.display.id}")
         )
-
-        hidpi_tag = " [HiDPI]" if self.display.scaling else ""
-        lines = [
-            self.display.name,
-            f"{self.display.resolution[0]}×{self.display.resolution[1]}{hidpi_tag}",
-            f"{self.display.hz}Hz" if self.display.hz else "",
-            "● Main" if self.display.is_main else "",
-        ]
-        label = "\n".join(l for l in lines if l)
-
         self.text_id = self.canvas.create_text(
-            cx + w // 2, cy + h // 2,
-            text=label,
+            cx + w / 2, cy + h / 2,
+            text=self._label(w),
             font=("Arial", 9, "bold"),
             fill="white",
             anchor="center",
+            width=max(w - 8, 40),
             tags=("display_text", f"text_{self.display.id}")
         )
+
+    def redraw(self):
+        """Re-project the model onto the existing canvas items (no re-create)."""
+        if self.rect_id is None:
+            return
+        cx, cy, w, h = self._canvas_rect()
+        self.canvas.coords(self.rect_id, cx, cy, cx + w, cy + h)
+        self.canvas.coords(self.text_id, cx + w / 2, cy + h / 2)
+        self.canvas.itemconfigure(self.text_id, text=self._label(w),
+                                  width=max(w - 8, 40))
 
     def bind_events(self):
         for item_id in (self.rect_id, self.text_id):
@@ -107,45 +115,8 @@ class DraggableDisplay:
             self.canvas.tag_bind(item_id, "<B1-Motion>", self.on_drag)
             self.canvas.tag_bind(item_id, "<ButtonRelease-1>", self.on_release)
 
-    def on_click(self, event):
-        self.is_dragging = True
-        self.drag_start_x = event.x
-        self.drag_start_y = event.y
-        self.canvas.tag_raise(self.rect_id)
-        self.canvas.tag_raise(self.text_id)
-
-    def on_drag(self, event):
-        if not self.is_dragging:
-            return
-        dx = event.x - self.drag_start_x
-        dy = event.y - self.drag_start_y
-        self.canvas.move(self.rect_id, dx, dy)
-        self.canvas.move(self.text_id, dx, dy)
-        self.drag_start_x = event.x
-        self.drag_start_y = event.y
-        self._sync_from_canvas()
-
-    def on_release(self, event):
-        self.is_dragging = False
-        self._sync_from_canvas()
-        for cb in self.callbacks['position_changed']:
-            cb(self.display)
-
-    def _sync_from_canvas(self):
-        """Update display.current_position from the canvas rect's current location."""
-        coords = self.canvas.coords(self.rect_id)
-        if coords:
-            ch = self._canvas_height()
-            # coords = [x1, y1, x2, y2]; use x1 and y2 (bottom of rect)
-            display_x, display_y = _canvas_to_display(coords[0], coords[3], ch, self.scale)
-            self.display.current_position = (display_x, display_y)
-
-    def add_callback(self, event_type: str, callback):
-        if event_type in self.callbacks:
-            self.callbacks[event_type].append(callback)
-
     def update_visual(self):
-        """Redraw completely from current display state (safe to call on scale/resolution change)."""
+        """Full re-create (needed after color/main-outline changes)."""
         if self.rect_id is not None:
             self.canvas.delete(self.rect_id)
         if self.text_id is not None:
@@ -153,10 +124,61 @@ class DraggableDisplay:
         self.create_visual()
         self.bind_events()
 
+    # ── Dragging ─────────────────────────────────────────────────────────────
+
+    def on_click(self, event):
+        cx, cy, _, _ = self._canvas_rect()
+        self.is_dragging = True
+        self._grab_dx = event.x - cx
+        self._grab_dy = event.y - cy
+        self._drag_started_at = self.display.current_position
+        self.canvas.tag_raise(self.rect_id)
+        self.canvas.tag_raise(self.text_id)
+
+    def on_drag(self, event):
+        if not self.is_dragging:
+            return
+        scale = self.view.scale
+        w = self.display.resolution[0] * scale
+        h = self.display.resolution[1] * scale
+
+        # Proposed top-left in canvas space, clamped so the rect can't escape view
+        cx = event.x - self._grab_dx
+        cy = event.y - self._grab_dy
+        cx, cy = clamp_to_view(cx, cy, w, h,
+                               self.canvas.winfo_width(), self.canvas.winfo_height(),
+                               margin=_MIN_VISIBLE_PX)
+
+        # Back to display space, then snap against the stationary displays
+        dx = (cx - self.view.offset[0]) / scale
+        dy = (cy - self.view.offset[1]) / scale
+        moving = Rect(round(dx), round(dy),
+                      self.display.resolution[0], self.display.resolution[1])
+        others = self.view.snap_rects(exclude_id=self.display.id)
+        sx, sy = snap_position(moving, others, threshold=_SNAP_CANVAS_PX / scale)
+
+        if (sx, sy) != self.display.current_position:
+            self.display.current_position = (sx, sy)
+            self.redraw()
+            for cb in self.callbacks['position_changed']:
+                cb(self.display)
+
+    def on_release(self, event):
+        if not self.is_dragging:
+            return
+        self.is_dragging = False
+        moved = self.display.current_position != self._drag_started_at
+        self._drag_started_at = None
+        for cb in self.callbacks['drag_finished']:
+            cb(self.display, moved)
+
+    def add_callback(self, event_type: str, callback):
+        if event_type in self.callbacks:
+            self.callbacks[event_type].append(callback)
+
     def set_position(self, display_x: int, display_y: int):
-        """Move display to given display-space coordinates and redraw."""
         self.display.current_position = (display_x, display_y)
-        self.update_visual()
+        self.redraw()
 
 
 class DisplayConfigPanel(ttk.Frame):
@@ -231,26 +253,22 @@ class DisplayConfigPanel(ttk.Frame):
                         variable=self.vars['is_main'],
                         command=self._on_change).pack(side="left")
 
-    def _update_hidpi_hint(self):
+    def _parsed_resolution(self):
         res_str = self.vars['resolution'].get()
         try:
             w, h = res_str.replace("×", "x").split("x")
-            resolution = (int(w), int(h))
+            return (int(w), int(h))
         except (ValueError, AttributeError):
-            resolution = self.display.resolution
-        recommended = is_hidpi_recommended(resolution)
+            return self.display.resolution
+
+    def _update_hidpi_hint(self):
+        recommended = is_hidpi_recommended(self._parsed_resolution())
         self._hidpi_hint_var.set("(recommended)" if recommended else "(optional)")
 
     def _on_resolution_change(self, event=None):
         """On resolution change: auto-suggest HiDPI, then notify parent."""
-        res_str = self.vars['resolution'].get()
-        try:
-            w, h = res_str.replace("×", "x").split("x")
-            resolution = (int(w), int(h))
-            if is_hidpi_recommended(resolution):
-                self.vars['scaling'].set(True)
-        except (ValueError, AttributeError):
-            pass
+        if is_hidpi_recommended(self._parsed_resolution()):
+            self.vars['scaling'].set(True)
         self._update_hidpi_hint()
         self._on_change(event)
 
@@ -261,17 +279,21 @@ class DisplayConfigPanel(ttk.Frame):
     def update_position_display(self, x: int, y: int):
         self.vars['position'].set(f"({x}, {y})")
 
+    def set_main_checkbox(self, value: bool):
+        self.vars['is_main'].set(value)
+
     def get_config(self) -> Dict:
-        res_str = self.vars['resolution'].get()
         try:
-            w, h = res_str.replace("×", "x").split("x")
-            resolution = (int(w), int(h))
-        except (ValueError, AttributeError):
-            resolution = self.display.resolution
+            hz = int(self.vars['hz'].get())
+            if not (1 <= hz <= 1000):
+                raise ValueError
+        except (ValueError, tk.TclError):
+            hz = self.display.hz
+            self.vars['hz'].set(str(hz))
         return {
-            'resolution': resolution,
+            'resolution': self._parsed_resolution(),
             'position': self.display.current_position,
-            'hz': int(self.vars['hz'].get() or self.display.hz),
+            'hz': hz,
             'scaling': self.vars['scaling'].get(),
             'is_main': self.vars['is_main'].get(),
             'rotation': self.display.rotation,
@@ -297,8 +319,44 @@ class AdvancedMonitorLayoutManager:
         self._unsaved_changes = False
         self.scale_label: Optional[ttk.Label] = None
 
+        # View transform: canvas = display * scale + offset
+        self.scale = 0.1
+        self.offset = (0.0, 0.0)
+
         self._setup_ui()
-        self.refresh_displays()
+        self.refresh_displays(confirm_discard=False)
+
+    # ── View-state protocol used by DraggableDisplay ─────────────────────────
+
+    def snap_rects(self, exclude_id: str):
+        return [
+            Rect(d.display.current_position[0], d.display.current_position[1],
+                 d.display.resolution[0], d.display.resolution[1])
+            for d in self.draggable_displays.values()
+            if d.display.id != exclude_id
+        ]
+
+    def _all_rects(self):
+        return [
+            Rect(d.display.current_position[0], d.display.current_position[1],
+                 d.display.resolution[0], d.display.resolution[1])
+            for d in self.draggable_displays.values()
+        ]
+
+    def _any_drag_active(self) -> bool:
+        return any(d.is_dragging for d in self.draggable_displays.values())
+
+    def _refit_view(self):
+        """Recenter the arrangement in the canvas at the current scale."""
+        w = self.canvas.winfo_width() or 800
+        h = self.canvas.winfo_height() or 600
+        self.offset = fit_offset(self._all_rects(), w, h, self.scale)
+
+    def _redraw_all(self):
+        for d in self.draggable_displays.values():
+            d.redraw()
+
+    # ── UI setup ─────────────────────────────────────────────────────────────
 
     def _setup_ui(self):
         style = ttk.Style()
@@ -382,12 +440,13 @@ class AdvancedMonitorLayoutManager:
         inner_canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        # macOS delivers small delta values (not Windows' ±120 steps)
         inner_canvas.bind("<MouseWheel>",
-                          lambda e: inner_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+                          lambda e: inner_canvas.yview_scroll(-1 if e.delta > 0 else 1, "units"))
 
     def _create_visual_editor(self, parent):
         ttk.Label(parent,
-                  text="Drag displays to arrange them.  Orange border = main display.",
+                  text="Drag displays to arrange them — edges snap together.  Orange border = main display.",
                   font=("Arial", 9), foreground="gray").pack(pady=(0, 6))
 
         self.canvas = tk.Canvas(parent, bg="#F2F2F2", relief="sunken", bd=2)
@@ -410,10 +469,12 @@ class AdvancedMonitorLayoutManager:
         btn_frame.pack(fill="x", pady=(6, 0))
         ttk.Button(btn_frame, text="Auto Arrange",
                    command=self.auto_arrange_displays).pack(side="left", padx=(0, 5))
-        ttk.Button(btn_frame, text="Align Horizontal",
+        ttk.Button(btn_frame, text="Align Row",
                    command=self.align_horizontal).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Align Vertical",
+        ttk.Button(btn_frame, text="Stack Column",
                    command=self.align_vertical).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Center View",
+                   command=self._recenter).pack(side="left", padx=5)
 
     def _create_status_bar(self, parent):
         status_frame = ttk.Frame(parent)
@@ -427,10 +488,6 @@ class AdvancedMonitorLayoutManager:
 
     # ── Canvas helpers ────────────────────────────────────────────────────────
 
-    def _canvas_height(self) -> int:
-        h = self.canvas.winfo_height()
-        return h if h > 10 else 600
-
     def draw_grid(self, event=None):
         self.canvas.delete("grid")
         w = self.canvas.winfo_width() or 800
@@ -439,30 +496,37 @@ class AdvancedMonitorLayoutManager:
             self.canvas.create_line(x, 0, x, h, fill="#E8E8E8", tags="grid")
         for y in range(0, h, 50):
             self.canvas.create_line(0, y, w, y, fill="#E8E8E8", tags="grid")
-        # Re-raise displays above grid
         self.canvas.tag_raise("display")
         self.canvas.tag_raise("display_text")
 
-    def _on_canvas_configure(self, event=None):
-        """Redraw grid and all display rects when the canvas is resized."""
+    def _recenter(self):
+        self._refit_view()
+        self._redraw_all()
         self.draw_grid()
-        for d in self.draggable_displays.values():
-            d.update_visual()
+
+    def _on_canvas_configure(self, event=None):
+        if self._any_drag_active():
+            return                      # never yank items out from under a drag
+        self._recenter()
 
     def _on_scale_change(self, value=None):
-        new_scale = self.scale_var.get()
-        for d in self.draggable_displays.values():
-            d.scale = new_scale
-            d.update_visual()
-        self.draw_grid()
         if self.scale_label:
-            self.scale_label.configure(text=f"{int(new_scale * 100)}%")
+            self.scale_label.configure(text=f"{int(self.scale_var.get() * 100)}%")
+        if self._any_drag_active():
+            return
+        self.scale = self.scale_var.get()
+        self._recenter()
 
     # ── Display management ───────────────────────────────────────────────────
 
-    def refresh_displays(self):
+    def refresh_displays(self, confirm_discard: bool = True):
+        if (confirm_discard and self._unsaved_changes
+                and not messagebox.askyesno(
+                    "Discard Changes?",
+                    "You have unsaved arrangement changes.\nRefreshing will discard them. Continue?")):
+            return
         self.status_var.set("Detecting displays…")
-        self.root.update()
+        self.root.update_idletasks()
         displays = self.display_manager.detect_displays()
         if not displays:
             self.status_var.set("No displays detected")
@@ -499,14 +563,18 @@ class AdvancedMonitorLayoutManager:
         self.draggable_displays.clear()
 
         for display_id, display in displays.items():
-            d = DraggableDisplay(self.canvas, display, self.scale_var.get())
+            d = DraggableDisplay(self.canvas, display, view=self)
             d.add_callback('position_changed', self.on_display_position_changed)
+            d.add_callback('drag_finished', self.on_display_drag_finished)
             self.draggable_displays[display_id] = d
 
-        self.draw_grid()
+        self._recenter()
 
     def on_display_config_change(self, display: Display, config: Dict):
         """Handle config panel changes — update model and redraw."""
+        became_main = config['is_main'] and not display.is_main
+        lost_main = display.is_main and not config['is_main']
+
         display.resolution = config['resolution']
         display.hz = config['hz']
         display.scaling = config['scaling']
@@ -514,18 +582,49 @@ class AdvancedMonitorLayoutManager:
         display.rotation = config['rotation']
         display.color_depth = config['color_depth']
 
+        if became_main:
+            # Exactly one main display: uncheck the others
+            for other_id, other in self.draggable_displays.items():
+                if other.display.id != display.id and other.display.is_main:
+                    other.display.is_main = False
+                    if other_id in self.config_panels:
+                        self.config_panels[other_id].set_main_checkbox(False)
+                    other.update_visual()
+        elif lost_main:
+            # macOS always has exactly one main display — to change it,
+            # check "Set as Main" on another display instead.
+            display.is_main = True
+            if display.id in self.config_panels:
+                self.config_panels[display.id].set_main_checkbox(True)
+            self.status_var.set(
+                "There must be one main display — set another display as main instead")
+
         if display.id in self.draggable_displays:
             self.draggable_displays[display.id].update_visual()
+        self.draw_grid()
 
         self.status_var.set("Configuration updated — drag to position, then Save")
         self._mark_dirty()
 
     def on_display_position_changed(self, display: Display):
+        """Live during drag: keep the sidebar position label in sync."""
         if display.id in self.config_panels:
             x, y = display.current_position
             self.config_panels[display.id].update_position_display(x, y)
-        self.status_var.set(f"Moved {display.name} to {display.current_position}")
+
+    def on_display_drag_finished(self, display: Display, moved: bool):
+        if not moved:
+            return
         self._mark_dirty()
+        rects = self._all_rects()
+        if overlaps(rects):
+            self.status_var.set(
+                f"Moved {display.name} — ⚠ displays overlap; drag them apart before applying")
+        elif not is_contiguous(rects):
+            self.status_var.set(
+                f"Moved {display.name} — ⚠ displays have a gap; macOS will close it on apply")
+        else:
+            self.status_var.set(f"Moved {display.name} to {display.current_position}")
 
     # ── Dirty / clean state ──────────────────────────────────────────────────
 
@@ -540,12 +639,20 @@ class AdvancedMonitorLayoutManager:
 
     # ── Arrangement helpers ──────────────────────────────────────────────────
 
+    def _sync_all_position_labels(self):
+        for d in self.draggable_displays.values():
+            if d.display.id in self.config_panels:
+                x, y = d.display.current_position
+                self.config_panels[d.display.id].update_position_display(x, y)
+
     def auto_arrange_displays(self):
+        """Main display at (0,0), the rest in a row to its right, tops aligned."""
         displays = list(self.draggable_displays.values())
         if not displays:
             return
         main = next((d for d in displays if d.display.is_main), displays[0])
         others = [d for d in displays if d is not main]
+        others.sort(key=lambda d: d.display.current_position[0])
 
         main.set_position(0, 0)
         x_offset = main.display.resolution[0]
@@ -553,66 +660,72 @@ class AdvancedMonitorLayoutManager:
             d.set_position(x_offset, 0)
             x_offset += d.display.resolution[0]
 
-        for d in self.draggable_displays.values():
-            if d.display.id in self.config_panels:
-                x, y = d.display.current_position
-                self.config_panels[d.display.id].update_position_display(x, y)
-
-        self.draw_grid()
-        self.status_var.set("Auto arranged")
-        self._mark_dirty()
+        self._after_programmatic_arrange("Auto arranged")
 
     def align_horizontal(self):
+        """One row, left-to-right in current order, tops aligned with the main."""
         if not self.draggable_displays:
             return
+        ordered = sorted(self.draggable_displays.values(),
+                         key=lambda d: d.display.current_position[0])
         ref_y = next(
             (d.display.current_position[1] for d in self.draggable_displays.values()
              if d.display.is_main), 0)
-        for d in self.draggable_displays.values():
-            d.set_position(d.display.current_position[0], ref_y)
-        self.draw_grid()
-        self.status_var.set("Aligned horizontally")
-        self._mark_dirty()
+        x = min(d.display.current_position[0] for d in ordered)
+        for d in ordered:
+            d.set_position(x, ref_y)
+            x += d.display.resolution[0]
+        self._after_programmatic_arrange("Aligned in a row")
 
     def align_vertical(self):
+        """One column, top-to-bottom in current order, lefts aligned with the main."""
         if not self.draggable_displays:
             return
+        ordered = sorted(self.draggable_displays.values(),
+                         key=lambda d: d.display.current_position[1])
         ref_x = next(
             (d.display.current_position[0] for d in self.draggable_displays.values()
              if d.display.is_main), 0)
-        y = 0
-        for d in self.draggable_displays.values():
+        y = min(d.display.current_position[1] for d in ordered)
+        for d in ordered:
             d.set_position(ref_x, y)
-            y -= d.display.resolution[1]
-        self.draw_grid()
-        self.status_var.set("Aligned vertically")
+            y += d.display.resolution[1]
+        self._after_programmatic_arrange("Stacked in a column")
+
+    def _after_programmatic_arrange(self, status: str):
+        self._sync_all_position_labels()
+        self._recenter()
+        self.status_var.set(status)
         self._mark_dirty()
 
     # ── Layout persistence ───────────────────────────────────────────────────
 
+    def _collect_config(self) -> Dict[str, Dict]:
+        """Current edited state: panel settings + canvas positions."""
+        config: Dict[str, Dict] = {}
+        for display_id, panel in self.config_panels.items():
+            cfg = panel.get_config()
+            if display_id in self.draggable_displays:
+                cfg['position'] = self.draggable_displays[display_id].display.current_position
+            config[display_id] = cfg
+        return config
+
     def save_current_layout(self):
-        # Pre-fill with current name if one is loaded (makes "update" flow obvious)
         pre = self.current_layout_name.get() or ""
         name = simpledialog.askstring("Save Layout", "Layout name:", initialvalue=pre)
         if not name:
             return
-
         description = simpledialog.askstring(
             "Save Layout", "Description (optional):", initialvalue="") or ""
 
-        # Sync positions from canvas panels into the display manager
-        for display_id, draggable in self.draggable_displays.items():
-            if display_id in self.display_manager.displays:
-                self.display_manager.displays[display_id].current_position = \
-                    draggable.display.current_position
-
-        if self.display_manager.save_layout(name, description):
+        # Save what is on the canvas (the edited state), not the live OS state
+        if self.display_manager.save_layout_from_config(name, description,
+                                                        self._collect_config()):
             self.current_layout_name.set(name)
             self._mark_clean()
             self.status_var.set(f"Layout '{name}' saved")
         else:
-            messagebox.showerror("Save Failed",
-                                 "Could not save the layout. Make sure displayplacer is installed.")
+            messagebox.showerror("Save Failed", "Could not save the layout.")
 
     def load_layout_dialog(self):
         layouts = self.display_manager.get_layout_names()
@@ -636,8 +749,7 @@ class AdvancedMonitorLayoutManager:
 
         for layout_name in layouts:
             listbox.insert(tk.END, layout_name)
-        if layouts:
-            listbox.selection_set(0)
+        listbox.selection_set(0)
 
         listbox.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -666,13 +778,14 @@ class AdvancedMonitorLayoutManager:
                 continue
             draggable = self.draggable_displays[display_id]
             position = config.get('position', (0, 0))
-            # Update the display model
             draggable.display.resolution = tuple(config.get('resolution', draggable.display.resolution))
             draggable.display.scaling = config.get('scaling', draggable.display.scaling)
             draggable.display.is_main = config.get('is_main', draggable.display.is_main)
             draggable.display.hz = config.get('hz', draggable.display.hz)
             draggable.display.rotation = config.get('rotation', draggable.display.rotation)
-            draggable.set_position(position[0], position[1])
+            draggable.display.color_depth = config.get('color_depth', draggable.display.color_depth)
+            draggable.display.current_position = (position[0], position[1])
+            draggable.update_visual()
 
         # Sync config panels
         for display_id, panel in self.config_panels.items():
@@ -692,9 +805,10 @@ class AdvancedMonitorLayoutManager:
             if 'position' in config:
                 panel.update_position_display(*config['position'])
 
+        self._recenter()
         self.current_layout_name.set(layout_name)
         self._mark_clean()
-        self.status_var.set(f"Layout '{layout_name}' loaded")
+        self.status_var.set(f"Layout '{layout_name}' loaded — Apply to make it real")
 
     def delete_layout_dialog(self):
         layouts = self.display_manager.get_layout_names()
@@ -720,32 +834,26 @@ class AdvancedMonitorLayoutManager:
 
     def apply_current_layout(self):
         """Apply the canvas arrangement to the physical displays immediately."""
+        rects = self._all_rects()
+        if overlaps(rects):
+            messagebox.showerror("Displays Overlap",
+                                 "Two or more displays overlap on the canvas.\n"
+                                 "Drag them apart (edges snap together) before applying.")
+            return
+        warning = ""
+        if not is_contiguous(rects):
+            warning = "\n\nNote: there are gaps between displays — macOS will close them."
         if not messagebox.askyesno("Apply Arrangement",
                                    "Apply the current display arrangement now?\n"
-                                   "Your monitors will rearrange."):
+                                   "Your monitors will rearrange." + warning):
             return
 
-        config: Dict[str, Dict] = {}
-        for display_id, panel in self.config_panels.items():
-            cfg = panel.get_config()
-            if display_id in self.draggable_displays:
-                cfg['position'] = self.draggable_displays[display_id].display.current_position
-            config[display_id] = cfg
-
-        temp_name = f"_apply_{int(datetime.now().timestamp())}"
-        layout = LayoutProfile(
-            name=temp_name,
-            description="",
-            displays=config,
-            created_at=datetime.now().isoformat()
-        )
-        self.display_manager.layouts[temp_name] = layout
-
-        success = self.display_manager.apply_layout(temp_name)
-        del self.display_manager.layouts[temp_name]
+        success = self.display_manager.apply_display_config(self._collect_config())
 
         if success:
             self.status_var.set("Arrangement applied")
+            # Re-detect so the canvas shows what macOS actually settled on
+            self.refresh_displays(confirm_discard=False)
         else:
             messagebox.showerror("Apply Failed",
                                  "Could not apply the arrangement.\n"
