@@ -34,7 +34,8 @@ def find_displayplacer() -> str | None:
     # Fall back to known Homebrew paths
     for path in _FALLBACK_PATHS:
         try:
-            result = subprocess.run([path, "--version"], capture_output=True, timeout=5)
+            result = subprocess.run([path, "--version"], capture_output=True, timeout=5,
+                                    check=False)
             if result.returncode == 0:
                 _cached_path = path
                 _discovery_done = True

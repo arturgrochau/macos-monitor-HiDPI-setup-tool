@@ -38,12 +38,12 @@ def launch_cli():
         cmd = [sys.executable, '-m', 'cli'] + args
         
         # Execute CLI module
-        result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+        result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)), check=False)
         sys.exit(result.returncode)
         
     except ImportError as e:
         print(f"❌ CLI Error: {e}")
-        print("📦 Install dependencies: pip install click rich colorama")
+        print("📦 Install dependencies: pip install click")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
@@ -57,8 +57,8 @@ def show_help():
     print("2️⃣  Launch CLI:  python3 main.py --cli")
     print("")
     print("Examples:")
-    print("  python3 main.py --cli detect     # Detect displays")
-    print("  python3 main.py --cli layouts    # List saved layouts")
+    print("  python3 main.py --cli detect          # Detect displays")
+    print("  python3 main.py --cli list-layouts    # List saved layouts")
 
 def main():
     """Main entry point - dispatches to GUI or CLI based on arguments."""
@@ -73,21 +73,8 @@ def main():
     elif len(sys.argv) > 1 and '--gui' in sys.argv:
         launch_gui()
     elif len(sys.argv) == 1:
-        # Interactive menu when no args
-        print("🖥️  Monitor Layout Manager")
-        print("")
-        print("1️⃣  Launch GUI")
-        print("2️⃣  Launch CLI") 
-        print("")
-        try:
-            choice = input("Choose option (1/2, or Enter for GUI): ").strip()
-            if choice == '2':
-                launch_cli()
-            else:
-                launch_gui()
-        except (KeyboardInterrupt, EOFError):
-            print("\n👋 Goodbye!")
-            return
+        # No args: launch the GUI (use --cli for the command-line interface)
+        launch_gui()
     else:
         # Default to GUI for best user experience
         launch_gui()

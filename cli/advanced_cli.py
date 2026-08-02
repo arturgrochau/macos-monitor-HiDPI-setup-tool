@@ -5,17 +5,17 @@ Advanced CLI Interface for Monitor Layout Manager
 import click
 import json
 import os
+import shutil
 import sys
-from typing import List, Dict
 from datetime import datetime
 
 # Add project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from version import __version__
-from core.advanced_display_manager import AdvancedDisplayManager
-from utils.helpers import (
+from version import __version__  # noqa: E402
+from core.advanced_display_manager import AdvancedDisplayManager, LayoutProfile  # noqa: E402
+from utils.helpers import (  # noqa: E402
     validate_displayplacer_installation,
     format_resolution,
     backup_current_layout
@@ -137,12 +137,19 @@ def load(layout_name, interactive):
             click.echo(f"Did you mean: {', '.join(similar)}")
         return
     
+    # apply_layout only issues commands for displays it knows about, so the
+    # live displays must be detected first or applying is a silent no-op.
+    if not manager.detect_displays():
+        click.echo(click.style("✗ No displays detected — cannot apply layout.", fg='red'))
+        sys.exit(1)
+
     click.echo(f"Applying layout '{layout_name}'...")
-    
+
     if manager.apply_layout(layout_name):
         click.echo(click.style(f"✓ Layout '{layout_name}' applied successfully!", fg='green'))
     else:
         click.echo(click.style(f"✗ Failed to apply layout '{layout_name}'", fg='red'))
+        sys.exit(1)
 
 @cli.command()
 def list_layouts():
@@ -157,18 +164,23 @@ def list_layouts():
     click.echo(click.style(f"Saved layouts ({len(layouts)}):", fg='blue', bold=True))
     click.echo()
     
+    def _format_date(iso_string):
+        """Format an ISO date defensively — bad/missing dates shouldn't crash listing."""
+        try:
+            return datetime.fromisoformat(iso_string).strftime("%Y-%m-%d %H:%M")
+        except (ValueError, TypeError):
+            return "unknown"
+
     for name in layouts:
         layout = manager.get_layout(name)
         displays_count = len(layout.displays)
-        created_date = datetime.fromisoformat(layout.created_at).strftime("%Y-%m-%d %H:%M")
-        
+
         click.echo(f"• {click.style(name, fg='cyan', bold=True)}")
         click.echo(f"  Description: {layout.description or 'No description'}")
         click.echo(f"  Displays: {displays_count}")
-        click.echo(f"  Created: {created_date}")
+        click.echo(f"  Created: {_format_date(layout.created_at)}")
         if layout.last_used:
-            last_used = datetime.fromisoformat(layout.last_used).strftime("%Y-%m-%d %H:%M")
-            click.echo(f"  Last used: {last_used}")
+            click.echo(f"  Last used: {_format_date(layout.last_used)}")
         click.echo()
 
 @cli.command()
@@ -210,7 +222,7 @@ def export(output):
             json.dump(export_data, f, indent=2)
         
         click.echo(click.style(f"✓ {len(layouts)} layout(s) exported to {output}", fg='green'))
-    except Exception as e:
+    except (OSError, TypeError) as e:
         click.echo(click.style(f"✗ Export failed: {e}", fg='red'))
 
 @cli.command()
@@ -227,27 +239,34 @@ def import_layouts(input_file, merge):
             import_data = json.load(f)
         
         manager = AdvancedDisplayManager()
-        
+
+        if not merge and os.path.exists(manager.layouts_file):
+            # Back up the saved-layouts file itself before it gets replaced
+            backup_dir = os.path.expanduser("~/.monitor_layout_backups")
+            os.makedirs(backup_dir, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_file = os.path.join(backup_dir, f"monitor_layouts_{timestamp}.json")
+            shutil.copy(manager.layouts_file, backup_file)
+            click.echo(f"Saved-layouts file backed up to: {backup_file}")
+
         if not merge:
-            # Backup existing layouts first
-            backup_file = backup_current_layout()
-            if backup_file:
-                click.echo(f"Existing layouts backed up to: {backup_file}")
-        
+            # Default is a true replace — the backup above keeps a copy
+            manager.layouts.clear()
+
         imported_count = 0
         for name, layout_data in import_data.items():
-            if merge and name in manager.layouts:
-                if not click.confirm(f"Layout '{name}' already exists. Overwrite?"):
-                    continue
-            
-            layout = manager.LayoutProfile(**layout_data)
+            if merge and name in manager.layouts and \
+                    not click.confirm(f"Layout '{name}' already exists. Overwrite?"):
+                continue
+
+            layout = LayoutProfile(**layout_data)
             manager.layouts[name] = layout
             imported_count += 1
         
         manager.save_layouts()
         click.echo(click.style(f"✓ {imported_count} layout(s) imported from {input_file}", fg='green'))
-        
-    except Exception as e:
+
+    except (OSError, json.JSONDecodeError, TypeError) as e:
         click.echo(click.style(f"✗ Import failed: {e}", fg='red'))
 
 @cli.command()
@@ -265,13 +284,13 @@ def gui():
     """Launch the graphical user interface"""
     try:
         from gui.advanced_layout_manager import AdvancedMonitorLayoutManager
-        
-        print_banner()
+
         click.echo("Launching GUI...")
-        
+
         app = AdvancedMonitorLayoutManager()
         app.run()
-        
+
+
     except ImportError:
         click.echo(click.style("GUI components not available. Install tkinter.", fg='red'))
     except Exception as e:
@@ -296,7 +315,7 @@ def doctor():
     
     # Check permissions
     click.echo("2. Checking file permissions...")
-    layouts_file = os.path.expanduser("~/.monitor_layouts.json")
+    layouts_file = AdvancedDisplayManager.LAYOUTS_FILE
     if os.path.exists(layouts_file):
         if os.access(layouts_file, os.R_OK | os.W_OK):
             click.echo(click.style("   ✓ Layouts file accessible", fg='green'))
@@ -322,7 +341,7 @@ def doctor():
     # Check Python tkinter (for GUI)
     click.echo("4. Checking GUI dependencies...")
     try:
-        import tkinter
+        import tkinter  # noqa: F401 -- availability probe only
         click.echo(click.style("   ✓ tkinter available for GUI", fg='green'))
     except ImportError:
         click.echo(click.style("   ✗ tkinter not available (GUI won't work)", fg='red'))

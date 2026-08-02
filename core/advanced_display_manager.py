@@ -6,7 +6,9 @@ Enhanced display management with dynamic detection and layout persistence.
 import subprocess
 import json
 import os
+import sys
 from typing import Dict, List, Optional, Tuple
+from datetime import datetime
 import re
 from dataclasses import dataclass, asdict
 
@@ -42,22 +44,30 @@ class AdvancedDisplayManager:
 
     LAYOUTS_FILE = os.path.expanduser("~/.monitor_layouts.json")
 
-    def __init__(self):
+    def __init__(self, layouts_file: str | None = None):
         self.DISPLAYPLACER = find_displayplacer()
+        self.layouts_file = layouts_file if layouts_file is not None else self.LAYOUTS_FILE
         self.displays: Dict[str, Display] = {}
         self.layouts: Dict[str, LayoutProfile] = {}
         self.load_layouts()
-    
+
     def detect_displays(self) -> Dict[str, Display]:
         """Detect all connected displays and their properties"""
         if not self.DISPLAYPLACER:
             print("Error: displayplacer not found. Install with: brew install jakehilborn/jakehilborn/displayplacer")
             return {}
         try:
-            output = subprocess.check_output([self.DISPLAYPLACER, "list"], text=True)
+            output = subprocess.check_output([self.DISPLAYPLACER, "list"], text=True, timeout=15)
             self.displays = self._parse_display_output(output)
             return self.displays
         except subprocess.CalledProcessError as e:
+            print(f"Error detecting displays: {e}")
+            return {}
+        except subprocess.TimeoutExpired:
+            print("Error detecting displays: displayplacer timed out")
+            return {}
+        except (FileNotFoundError, OSError) as e:
+            # The cached displayplacer path can vanish between discovery and use
             print(f"Error detecting displays: {e}")
             return {}
     
@@ -71,13 +81,32 @@ class AdvancedDisplayManager:
         for section in sections:
             if not section.strip():
                 continue
-                
-            display = self._parse_display_section(section)
+
+            try:
+                display = self._parse_display_section(section)
+            except Exception as e:
+                first_line = section.strip().splitlines()[0] if section.strip() else ""
+                print(
+                    f"Warning: skipping unparseable display section ({e}): {first_line}",
+                    file=sys.stderr,
+                )
+                continue
             if display:
                 displays[display.id] = display
-        
+
         return displays
-    
+
+    @staticmethod
+    def _value_after_colon(line: str) -> Optional[str]:
+        """Return the value after 'Key: ' in a displayplacer line, or None.
+
+        Defensive against format drift — never raises IndexError.
+        """
+        parts = line.split(": ", 1)
+        if len(parts) != 2:
+            return None
+        return parts[1].strip()
+
     def _parse_display_section(self, section: str) -> Optional[Display]:
         """Parse a single display section"""
         lines = section.strip().split('\n')
@@ -98,8 +127,11 @@ class AdvancedDisplayManager:
         for line in lines:
             line = line.strip()
             
+            value = self._value_after_colon(line)
+
             if line.startswith("Persistent screen id:"):
-                display_id = line.split(": ")[1]
+                if value:
+                    display_id = value
             elif line.startswith("Type:"):
                 if "MacBook" in line:
                     display_type = "macbook"
@@ -109,29 +141,32 @@ class AdvancedDisplayManager:
                 else:
                     name = "External Display"
             elif line.startswith("Resolution:"):
-                res_str = line.split(": ")[1]
-                w, h = res_str.split("x")
-                resolution = (int(w), int(h))
+                if value and "x" in value:
+                    w, h = value.split("x")
+                    resolution = (int(w), int(h))
             elif line.startswith("Origin:"):
-                origin_str = line.split(": ")[1]
-                # Parse (x,y) format, handle main display indicator
-                origin_str = origin_str.split(" - ")[0]  # Remove main display indicator
-                coords = origin_str.strip("()")
-                x, y = coords.split(",")
-                position = (int(x), int(y))
-                is_main = "main display" in line
+                if value:
+                    # Parse (x,y) format, handle main display indicator
+                    origin_str = value.split(" - ")[0]  # Remove main display indicator
+                    coords = origin_str.strip("()")
+                    x, y = coords.split(",")
+                    position = (int(x), int(y))
+                    is_main = "main display" in line
             elif line.startswith("Rotation:"):
-                rotation = int(line.split(": ")[1].split()[0])
+                if value:
+                    rotation = int(value.split()[0])
             elif line.startswith("Scaling:"):
-                scaling = "on" in line.split(": ")[1]
+                if value:
+                    scaling = "on" in value
             elif line.startswith("Hertz:"):
-                hz_str = line.split(": ")[1]
-                if hz_str != "N/A":
-                    hz = int(hz_str)
+                if value and value != "N/A":
+                    hz = int(value)
             elif line.startswith("Color Depth:"):
-                color_depth = int(line.split(": ")[1])
+                if value:
+                    color_depth = int(value)
             elif line.startswith("Enabled:"):
-                enabled = "true" in line.split(": ")[1]
+                if value:
+                    enabled = "true" in value
             elif "mode" in line and "res:" in line:
                 # Parse available resolutions
                 match = re.search(r'res:(\d+)x(\d+)', line)
@@ -158,42 +193,78 @@ class AdvancedDisplayManager:
             is_main=is_main
         )
     
+    def apply_display_config(self, displays_config: Dict[str, Dict]) -> bool:
+        """Apply a display configuration dict immediately.
+
+        Never touches self.layouts or the layouts file — callers that want
+        persistence (apply_layout) handle that themselves.
+        """
+        def connected(display_id: str) -> bool:
+            return display_id in self.displays and self.displays[display_id].enabled
+
+        # displayplacer origins are relative to the main display's top-left
+        # (0,0). If the config marks a connected display as main, re-normalize
+        # every origin so it lands exactly at (0,0) with relative offsets
+        # preserved. If the marked main is not connected, anchor to the first
+        # connected display instead so the applied arrangement still has a
+        # display at (0,0). If no display claims main, keep origins as-is.
+        offset_x, offset_y = 0, 0
+        main_ids = [did for did, c in displays_config.items()
+                    if c.get('is_main') and 'position' in c]
+        if main_ids:
+            anchor = next((did for did in main_ids if connected(did)), None)
+            if anchor is None:
+                anchor = next((did for did, c in displays_config.items()
+                               if connected(did) and 'position' in c), None)
+            if anchor is not None:
+                offset_x, offset_y = displays_config[anchor]['position']
+
+        commands = []
+
+        for display_id, config in displays_config.items():
+            if connected(display_id):
+                cmd_parts = [f"id:{display_id}"]
+
+                if 'resolution' in config:
+                    w, h = config['resolution']
+                    cmd_parts.append(f"res:{w}x{h}")
+
+                if 'hz' in config:
+                    cmd_parts.append(f"hz:{config['hz']}")
+
+                if 'color_depth' in config:
+                    cmd_parts.append(f"color_depth:{config['color_depth']}")
+
+                if 'scaling' in config:
+                    cmd_parts.append(f"scaling:{'on' if config['scaling'] else 'off'}")
+
+                if 'position' in config:
+                    x, y = config['position']
+                    cmd_parts.append(f"origin:({x - offset_x},{y - offset_y})")
+
+                if 'rotation' in config:
+                    cmd_parts.append(f"degree:{config['rotation']}")
+
+                commands.append(" ".join(cmd_parts))
+
+        if not commands:
+            print("No displays from this configuration are currently connected — nothing to apply")
+            return False
+
+        return self._execute_displayplacer_commands(commands)
+
     def apply_layout(self, layout_name: str) -> bool:
         """Apply a saved layout"""
         if layout_name not in self.layouts:
             print(f"Layout '{layout_name}' not found")
             return False
-        
+
         layout = self.layouts[layout_name]
-        commands = []
-        
-        for display_id, config in layout.displays.items():
-            if display_id in self.displays and self.displays[display_id].enabled:
-                cmd_parts = [f"id:{display_id}"]
-                
-                if 'resolution' in config:
-                    w, h = config['resolution']
-                    cmd_parts.append(f"res:{w}x{h}")
-                
-                if 'hz' in config:
-                    cmd_parts.append(f"hz:{config['hz']}")
-                
-                if 'color_depth' in config:
-                    cmd_parts.append(f"color_depth:{config['color_depth']}")
-                
-                if 'scaling' in config:
-                    cmd_parts.append(f"scaling:{'on' if config['scaling'] else 'off'}")
-                
-                if 'position' in config:
-                    x, y = config['position']
-                    cmd_parts.append(f"origin:({x},{y})")
-                
-                if 'rotation' in config:
-                    cmd_parts.append(f"degree:{config['rotation']}")
-                
-                commands.append(" ".join(cmd_parts))
-        
-        return self._execute_displayplacer_commands(commands)
+        success = self.apply_display_config(layout.displays)
+        if success:
+            layout.last_used = datetime.now().isoformat()
+            self.save_layouts()
+        return success
     
     def save_layout(self, name: str, description: str = "") -> bool:
         """Save current display configuration as a layout"""
@@ -216,18 +287,41 @@ class AdvancedDisplayManager:
                     'is_main': display.is_main
                 }
         
-        from datetime import datetime
         layout = LayoutProfile(
             name=name,
             description=description,
             displays=layout_config,
             created_at=datetime.now().isoformat()
         )
-        
+
         self.layouts[name] = layout
         self.save_layouts()
         return True
-    
+
+    def save_layout_from_config(self, name: str, description: str,
+                                displays_config: Dict[str, Dict]) -> bool:
+        """Save a layout from a provided configuration dict (no re-detection).
+
+        displays_config maps display id -> dict with keys such as
+        resolution, position, hz, scaling, is_main, rotation, color_depth.
+        Used by the GUI so user edits are persisted exactly as arranged.
+        """
+        if not displays_config:
+            print("No display configuration provided to save")
+            return False
+
+        layout = LayoutProfile(
+            name=name,
+            description=description,
+            displays=displays_config,
+            created_at=datetime.now().isoformat()
+        )
+
+        self.layouts[name] = layout
+        self.save_layouts()
+        return True
+
+
     def delete_layout(self, name: str) -> bool:
         """Delete a saved layout"""
         if name in self.layouts:
@@ -246,13 +340,13 @@ class AdvancedDisplayManager:
     
     def load_layouts(self):
         """Load saved layouts from disk"""
-        if os.path.exists(self.LAYOUTS_FILE):
+        if os.path.exists(self.layouts_file):
             try:
-                with open(self.LAYOUTS_FILE, 'r') as f:
+                with open(self.layouts_file, 'r') as f:
                     data = json.load(f)
                     for name, layout_data in data.items():
                         self.layouts[name] = LayoutProfile(**layout_data)
-            except Exception as e:
+            except (OSError, json.JSONDecodeError, TypeError) as e:
                 print(f"Error loading layouts: {e}")
     
     def save_layouts(self):
@@ -262,9 +356,9 @@ class AdvancedDisplayManager:
             for name, layout in self.layouts.items():
                 data[name] = asdict(layout)
             
-            with open(self.LAYOUTS_FILE, 'w') as f:
+            with open(self.layouts_file, 'w') as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except (OSError, TypeError) as e:
             print(f"Error saving layouts: {e}")
     
     def _execute_displayplacer_commands(self, commands: List[str]) -> bool:
@@ -282,13 +376,16 @@ class AdvancedDisplayManager:
         try:
             result = subprocess.run(
                 [self.DISPLAYPLACER] + commands,
-                capture_output=True, text=True
+                capture_output=True, text=True, timeout=30, check=False
             )
             if result.returncode != 0:
-                print(f"displayplacer failed: {result.stderr}")
+                print(f"displayplacer failed: {result.stderr.strip()}")
                 return False
             return True
-        except Exception as e:
+        except subprocess.TimeoutExpired:
+            print("Error executing commands: displayplacer timed out after 30s")
+            return False
+        except (FileNotFoundError, OSError) as e:
             print(f"Error executing commands: {e}")
             return False
     

@@ -43,43 +43,67 @@ def _setup_bundle_paths():
                         sys.path.insert(0, p)
 
 
+def _find_brew() -> "str | None":
+    """Locate the brew binary explicitly.
+
+    Apps launched from Finder inherit a minimal PATH (/usr/bin:/bin:...),
+    so a bare 'brew' is not found for exactly the users who need it.
+    """
+    import shutil
+
+    found = shutil.which('brew')
+    if found:
+        return found
+    for candidate in ('/opt/homebrew/bin/brew', '/usr/local/bin/brew'):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
 def _check_displayplacer() -> bool:
     """Return True if displayplacer is available; otherwise show an install dialog."""
     try:
         from utils.displayplacer import find_displayplacer
         if find_displayplacer():
             return True
-    except Exception:
+    except ImportError:
         pass
 
-    # Fall back to a basic PATH check before showing the dialog
     import subprocess
-    try:
-        r = subprocess.run(['which', 'displayplacer'], capture_output=True, text=True, timeout=5)
-        if r.returncode == 0:
-            return True
-    except Exception:
-        pass
-
     import tkinter as tk
     from tkinter import messagebox
 
     root = tk.Tk()
     root.withdraw()
 
+    brew_path = _find_brew()
+    if brew_path is None:
+        messagebox.showerror(
+            "displayplacer Required",
+            "Monitor Layout Manager requires 'displayplacer', and Homebrew "
+            "was not found, so it cannot be installed automatically.\n\n"
+            "Install Homebrew first:\n"
+            '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/'
+            'Homebrew/install/HEAD/install.sh)"\n\n'
+            "Then install displayplacer:\n"
+            "  brew install jakehilborn/jakehilborn/displayplacer"
+        )
+        root.destroy()
+        return False
+
     response = messagebox.askyesno(
         "displayplacer Required",
         "Monitor Layout Manager requires 'displayplacer'.\n\n"
         "Install it now?\n\n"
         "  brew install jakehilborn/jakehilborn/displayplacer\n\n"
-        "(This opens a terminal and may take a minute.)"
+        "(This runs Homebrew in the background and may take a few minutes.)"
     )
 
     if response:
         try:
             result = subprocess.run(
-                ['brew', 'install', 'jakehilborn/jakehilborn/displayplacer'],
-                timeout=300
+                [brew_path, 'install', 'jakehilborn/jakehilborn/displayplacer'],
+                capture_output=True, text=True, timeout=300, check=False
             )
             if result.returncode == 0:
                 messagebox.showinfo("Installed", "displayplacer installed! Starting app…")
@@ -92,10 +116,14 @@ def _check_displayplacer() -> bool:
                     pass
                 return True
             else:
-                messagebox.showerror("Install Failed",
-                                     "Homebrew install failed.\n"
-                                     "Run manually:\n"
-                                     "  brew install jakehilborn/jakehilborn/displayplacer")
+                stderr_tail = "\n".join((result.stderr or "").strip().splitlines()[-8:])
+                messagebox.showerror(
+                    "Install Failed",
+                    "Homebrew install failed.\n"
+                    "Run manually:\n"
+                    "  brew install jakehilborn/jakehilborn/displayplacer\n\n"
+                    f"Error output:\n{stderr_tail}"
+                )
         except subprocess.TimeoutExpired:
             messagebox.showerror("Timeout", "Installation timed out. Try running it manually.")
         except Exception as exc:
