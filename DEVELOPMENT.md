@@ -12,16 +12,16 @@
 ## Running from Source
 
 ```bash
-git clone https://github.com/arturgrochau/monitor-setup-tool.git
-cd monitor-setup-tool
+git clone https://github.com/arturgrochau/macos-monitor-HiDPI-setup-tool.git
+cd macos-monitor-HiDPI-setup-tool
 
-# Install runtime dependencies
+# One-shot launcher (bootstraps .venv on first run)
+./scripts/monitor-layout.sh gui
+./scripts/monitor-layout.sh cli detect
+
+# Or manually
 pip install -r requirements.txt
-
-# Launch GUI (default)
-python main.py
-
-# Launch CLI
+python main.py                   # GUI (default)
 python main.py --cli detect
 python main.py --cli save --name "Work Setup"
 python main.py --cli load "Work Setup"
@@ -32,15 +32,17 @@ python main.py --cli doctor      # diagnose setup issues
 ## Project Structure
 
 ```
-monitor-setup-tool/
+macos-monitor-HiDPI-setup-tool/
 ├── main.py                          # Entry point: dispatches GUI vs CLI
 ├── app_launcher.py                  # py2app bundle launcher
 ├── version.py                       # Single version source of truth
 ├── setup.py                         # py2app build configuration
 ├── build_app.sh                     # Build script
-├── requirements.txt                 # Runtime dependencies
+├── requirements.txt                 # Runtime dependencies (click)
 ├── requirements-dev.txt             # Build-only dependencies (py2app)
 ├── pyproject.toml                   # Modern package metadata
+├── scripts/
+│   └── monitor-layout.sh            # venv-bootstrapping launcher
 ├── core/
 │   └── advanced_display_manager.py  # Display detection & layout persistence
 ├── cli/
@@ -48,11 +50,26 @@ monitor-setup-tool/
 │   └── __main__.py                  # `python -m cli` entry point
 ├── gui/
 │   ├── advanced_layout_manager.py   # Main Tkinter GUI
-│   └── settings_dialog.py          # Settings dialog
+│   └── canvas_math.py               # Pure canvas coordinate math (headless-testable)
 ├── utils/
-│   ├── displayplacer.py            # Dynamic displayplacer binary discovery
-│   └── helpers.py                  # Shared utility functions
-└── overrides/                       # macOS display override plists
+│   ├── displayplacer.py             # Dynamic displayplacer binary discovery
+│   └── helpers.py                   # Shared utility functions
+└── tests/
+    ├── conftest.py                  # Shared fixtures (displayplacer output)
+    ├── test_parser.py               # displayplacer output parsing tests
+    ├── test_layouts.py              # Layout persistence & command generation
+    └── test_canvas_math.py          # GUI canvas coordinate math
+```
+
+## Tests and Linting
+
+The test suite is headless-safe (no tkinter needed) and runs in CI on every push/PR to `main` (`.github/workflows/ci.yml`).
+
+```bash
+pip install pytest ruff
+
+pytest tests/ -v     # run tests
+ruff check .         # lint
 ```
 
 ## Architecture
@@ -91,7 +108,7 @@ Requirements: py2app, Python 3.12+, macOS 13+.
 
 All version strings come from `version.py`:
 ```python
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 ```
 
 `setup.py` and `cli/advanced_cli.py` import from this file. When bumping the version, only edit `version.py`.
